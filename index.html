@@ -1,0 +1,2351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Word Valley — Lily Pad Pond</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; min-height: 100%;
+    font-family: -apple-system, "Comic Sans MS", "Trebuchet MS", sans-serif;
+    color: #5A4632;
+  }
+  body {
+    background-image: url('assets/48ef799a-3165-4cd6-949a-daa822b3a84b.jpeg');
+    background-size: cover;
+    background-position: center bottom;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+  .screen {
+    max-width: 900px; margin: 0 auto; min-height: 100vh;
+    display: flex; flex-direction: column;
+    padding: 18px;
+  }
+  .view { display: none; flex: 1; flex-direction: column; }
+  .view.active { display: flex; }
+
+  /* ---------- shared panels ---------- */
+  .panel {
+    background: rgba(255,255,255,0.9); border: 4px solid #B5780C; border-radius: 26px;
+    box-shadow: 0 5px 0 #e7cda0; padding: 24px;
+  }
+  .panel-soft {
+    background: rgba(255,255,255,0.85); border: 3px solid #B5780C; border-radius: 20px;
+    box-shadow: 0 3px 0 #e7cda0; padding: 14px;
+  }
+  button { font-family: inherit; }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 15px; font-weight: bold; margin-bottom: 10px;
+  }
+  .map-btn, .pill-btn {
+    background: #fff; border: 3px solid #B5780C; border-radius: 14px;
+    padding: 8px 16px; font-size: 16px; cursor: pointer;
+    box-shadow: 0 3px 0 #e7cda0;
+  }
+  .level-label {
+    font-size: 16px; color: #6b4a14; background: rgba(255,255,255,0.85);
+    padding: 8px 16px; border-radius: 14px; border: 3px solid #B5780C;
+    box-shadow: 0 3px 0 #e7cda0;
+  }
+
+  /* ---------- Fennick prompt ---------- */
+  .prompt-box { display:flex; align-items:center; gap:12px; margin: 0 0 18px; }
+  .prompt-box img { width: 64px; flex-shrink: 0; }
+  .prompt-bubble {
+    background:#fff; border:3px solid #B5780C; border-radius:18px;
+    padding:14px 20px; font-size:22px; font-weight:bold; flex:1;
+    box-shadow: 0 3px 0 #e7cda0;
+  }
+
+  /* ---------- word / question card ---------- */
+  .card {
+    background:#fff; border:4px solid #B5780C; border-radius:26px;
+    padding:28px; text-align:center; margin-bottom:22px;
+    box-shadow: 0 5px 0 #e7cda0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; min-height: 200px;
+  }
+  .card img { width:160px; height:160px; object-fit:contain; }
+  .card .icon-fallback {
+    width:160px; height:160px; display:flex; align-items:center; justify-content:center;
+    font-size:80px;
+  }
+  .card .word { font-size:34px; font-weight:bold; }
+  .card .sentence { font-size:28px; font-weight:bold; line-height:1.5; }
+  .card .sentence .blank { color:#B5780C; }
+
+  /* ---------- choice buttons (2 or 3 wide) ---------- */
+  .choice-row { display:flex; gap:16px; justify-content:center; margin-bottom: 20px; flex-wrap: wrap; }
+  .choice {
+    flex:1; min-width: 120px; max-width: 240px; cursor:pointer; user-select:none;
+    background:#9CDC76; border:4px solid #6FAE4A; border-radius:24px;
+    padding:18px 12px; text-align:center; font-size:20px; font-weight:bold; color:#3d5c28;
+    transition: transform 0.1s;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap: 8px; min-height: 100px;
+    box-shadow: 0 4px 0 #6FAE4A;
+  }
+  .choice:active { transform: scale(0.96); }
+  .choice img { width: 56px; height: 56px; object-fit: contain; }
+  .choice .emoji { font-size: 36px; }
+  .choice.special { background:#C6EAF7; border-color:#7BBBD6; color:#2b5066; box-shadow: 0 4px 0 #7BBBD6; }
+  .choice.alt { background:#FFD9A0; border-color:#E0A23A; color:#7a4f0d; box-shadow: 0 4px 0 #E0A23A; }
+  .choice .cap-icon { font-size:28px; line-height:1; }
+  .choice.correct { background:#FFC857; border-color:#B5780C; color:#6b4a14; box-shadow: 0 4px 0 #B5780C; }
+  .choice.wrong { animation: wobble 0.4s; }
+  .classify-btn { font-size:28px; padding:24px 16px; max-width:100%; }
+
+  /* ---------- candy jar exercise ---------- */
+  .gb-key { display:flex; gap:14px; justify-content:center; margin-bottom:14px; flex-wrap:wrap; }
+  .gb-swatch {
+    display:flex; align-items:center; gap:10px; padding:12px 24px;
+    border-radius:20px; border:4px solid rgba(0,0,0,0.12);
+    font-size:20px; font-weight:bold; color:#3a2a00;
+    cursor:pointer; transition:transform 0.1s, box-shadow 0.15s;
+    user-select:none;
+  }
+  .gb-swatch:hover { transform:scale(1.05); }
+  .gb-swatch.active { box-shadow:0 0 0 5px #3a2a00; transform:scale(1.08); }
+
+  /* Candy jar exercise */
+  .gb-jar-wrap { position:relative; width:100%; max-width:820px; margin:0 auto 14px; }
+  .gb-jar-svg  { width:100%; display:block; pointer-events:none; user-select:none; }
+  .gb-jar {
+    position:absolute; top:20%; left:13%; right:13%; bottom:10%;
+    display:flex; flex-wrap:wrap;
+    justify-content:center;
+    align-content:flex-end;
+    gap:0; padding:0 4px 4px;
+    overflow:hidden;
+  }
+  .gb-jar.brush-ready .gb-bubble {
+    cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><text y='30' font-size='28'>🖌️</text></svg>") 4 32, crosshair;
+  }
+  .gb-bubble {
+    border-radius:50%; display:flex; align-items:center; justify-content:center;
+    text-align:center; font-weight:bold;
+    color:#3a2a00; border:3px solid #C8B89A; background:#f5f0e8;
+    transition:background 0.2s, border-color 0.2s;
+    user-select:none; padding:8px; line-height:1.2; flex-shrink:0;
+  }
+  .gb-bubble.wrong-flash { animation:wobble 0.4s; }
+
+  /* ---------- word cloud exercise ---------- */
+  .wc-palette-row { display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:14px; flex-wrap:wrap; }
+  .wc-palette-label { font-size:18px; font-weight:bold; color:#5A4632; }
+  .wc-pen {
+    width:38px; height:38px; border-radius:50%; border:4px solid transparent;
+    cursor:pointer; transition:transform 0.1s, border-color 0.15s;
+  }
+  .wc-pen:hover { transform:scale(1.15); }
+  .wc-pen.selected { border-color:#3a2a00; transform:scale(1.2); }
+  .wc-box {
+    background:#fff; border:3px solid #C8B89A; border-radius:18px;
+    padding:24px 28px; margin-bottom:16px; min-height:340px;
+    display:flex; flex-wrap:wrap; justify-content:center; align-items:center;
+    width:100%;
+  }
+  .wc-word {
+    font-weight:bold; cursor:pointer; user-select:none;
+    padding:4px 8px; border-radius:6px;
+    color:#3a2a00; transition:background 0.15s;
+    border:none; background:transparent;
+  }
+  .wc-word:active { opacity:0.75; }
+  .wc-word.highlighted { border-radius:6px; }
+  .wc-word.wrong-flash { animation:wobble 0.4s; background:#EF9A9A !important; }
+  @keyframes wobble {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px) rotate(-3deg); }
+    75% { transform: translateX(6px) rotate(3deg); }
+  }
+
+  /* ---------- capital-hunt word chips ---------- */
+  .word-chips { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
+  .chip {
+    background:#FFF6E5; border: 3px solid #E0A23A; border-radius:14px;
+    padding:10px 16px; font-size:26px; font-weight:bold; cursor:pointer;
+    user-select:none; transition: transform 0.1s;
+  }
+  .chip:active { transform: scale(0.95); }
+  .chip.target.done { background:#FFC857; border-color:#B5780C; color:#6b4a14; }
+  .chip.wobble { animation: wobble 0.4s; }
+  .chip.static { background: transparent; border-color: transparent; cursor: default; padding: 10px 4px; }
+
+  /* ---------- feedback ---------- */
+  .feedback {
+    text-align:center; font-size:26px; font-weight:bold; min-height: 36px;
+    margin-bottom: 10px; text-shadow: 0 1px 0 #fff;
+  }
+  .feedback.good { color:#5f9b3a; }
+  .feedback.try { color:#c97b2e; }
+
+  /* ---------- fun fact ---------- */
+  .funfact {
+    background:#FFF6E5; border:3px dashed #FFC857; border-radius:18px;
+    padding:14px 18px; text-align:center; font-size:19px; margin-bottom:12px;
+    display:none; box-shadow: 0 3px 0 #f0dcb8;
+  }
+  .funfact.show { display:block; }
+
+  /* ---------- progress track ---------- */
+  .q-track-wrap { display:flex; justify-content:center; padding: 6px 0 10px; }
+  .q-track { display:flex; align-items:center; justify-content:center; gap: 6px; flex-wrap: wrap; }
+  .pad-dot {
+    width: 36px; height: 14px; border-radius: 8px;
+    background:#D9D0C0; border: none;
+  }
+  .pad-dot.done    { background:#FFC857; }
+  .pad-dot.current { background:#B5780C; }
+
+  /* ---------- MAP SCREEN ---------- */
+  .map-title {
+    text-align:center; font-size:30px; font-weight:bold; margin: 4px 0 16px;
+    color:#5A4632; text-shadow: 0 2px 0 #fff8ec, 0 0 6px #fff;
+  }
+  .map-fennick-row { display:flex; align-items:flex-end; gap: 14px; margin-bottom: 16px; }
+  .map-fennick-row img.fennick { width: 90px; }
+  .map-fennick-row img.frog { width: 64px; }
+  .map-speech {
+    background:#fff; border:3px solid #B5780C; border-radius:16px;
+    padding:12px 16px; font-size:18px; line-height:1.4; flex:1;
+    box-shadow: 0 3px 0 #e7cda0;
+  }
+  .level-grid { display:flex; flex-direction:column; gap: 14px; flex: 1; }
+  .level-card {
+    background: rgba(255,255,255,0.92); border:4px solid #B5780C; border-radius:22px;
+    padding:22px 26px; display:flex; align-items:center; justify-content:space-between;
+    cursor:pointer; box-shadow: 0 5px 0 #e7cda0; transition: transform 0.08s;
+    flex: 1; /* cards share all remaining vertical space equally */
+  }
+  .level-card:active { transform: scale(0.98); }
+  .level-card .lname { font-size:22px; font-weight:bold; }
+  .level-card .lsub { font-size:15px; color:#9b8568; margin-top:4px; }
+  .level-card .lstatus { font-size: 36px; }
+  .level-card.done { border-color:#6FAE4A; }
+  .sublevel-btn {
+    display: flex; align-items: center; gap: 12px;
+    background: #FFF6E5; border: 2px solid #E0A23A; border-radius: 16px;
+    padding: 14px 16px; cursor: pointer; margin-top: 8px;
+    transition: background 0.1s; box-shadow: 0 3px 0 #c8882a;
+    flex: 1;
+  }
+  .sublevel-btn:active { transform: scale(0.97); }
+  .sub-label { font-size: 17px; font-weight: bold; color: #5A4632; flex: 1; }
+  .sub-sub   { font-size: 13px; color: #9b8568; flex: 2; }
+  .sub-arrow { font-size: 22px; }
+
+  /* ---------- chapter end ---------- */
+  .celebrate {
+    text-align:center; padding: 40px 24px; margin-top: auto; margin-bottom: auto;
+    background: rgba(255,255,255,0.92); border: 4px solid #B5780C; border-radius: 26px;
+    box-shadow: 0 5px 0 #e7cda0;
+  }
+  .celebrate img { width: 140px; }
+  .celebrate h2 { font-size: 32px; }
+  .celebrate p { font-size: 20px; }
+  .celebrate-btn {
+    background:#FFC857; border:4px solid #B5780C; border-radius:18px;
+    padding:14px 28px; font-size:22px; font-weight:bold; color:#6b4a14;
+    cursor:pointer; margin-top: 14px; box-shadow: 0 4px 0 #B5780C;
+  }
+  .stars { font-size: 40px; margin: 10px 0; }
+
+  /* ---------- drag-drop noun sort ---------- */
+  .noun-bank {
+    display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; align-content: flex-start;
+    padding: 16px; background: rgba(255,255,255,0.9); border: 3px solid #B5780C;
+    border-radius: 20px; margin-bottom: 16px;
+    box-shadow: 0 3px 0 #e7cda0;
+  }
+  .noun-bank-empty {
+    color: #6FAE4A; font-weight: bold; font-size: 22px;
+    display: flex; align-items: center; justify-content: center; width: 100%;
+    padding: 20px 0;
+  }
+  .noun-card {
+    width: 114px; cursor: grab; background: #fff; border: 3px solid #B5780C;
+    border-radius: 14px; overflow: hidden; box-shadow: 0 3px 0 #e7cda0;
+    user-select: none; touch-action: none; text-align: center;
+  }
+  .noun-card img { width: 114px; height: 100px; object-fit: contain; display: block; background: #fff; }
+  .noun-card .noun-label {
+    font-size: 18px; font-weight: bold; color: #5A4632;
+    padding: 6px 4px 8px; text-transform: capitalize;
+  }
+  .noun-card.dragging { opacity: 0.35; }
+  .drag-columns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 8px; }
+  .drag-col {
+    border: 3px dashed #B5780C; border-radius: 16px;
+    background: rgba(255,255,255,0.75);
+    min-height: 500px;
+    display: flex; flex-direction: column; align-items: center;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .drag-col.drag-over { background: #FFF6E5; border-color: #FFC857; border-style: solid; }
+  .drag-col.col-done { background: #e8f8d8; border-color: #6FAE4A; border-style: solid; }
+  .col-header {
+    font-size: 16px; font-weight: bold; color: #5A4632; padding: 10px 6px 8px;
+    text-align: center; border-bottom: 2px solid #e7cda0; width: 100%;
+  }
+  .col-icon { font-size: 28px; line-height: 1.3; }
+  .col-cards { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 10px; align-content: flex-start; flex: 1; }
+  .col-card { width: 114px; border: 2px solid #6FAE4A; border-radius: 12px; overflow: hidden; background: #fff; text-align: center; }
+  .col-card img { width: 114px; height: 100px; object-fit: contain; display: block; background: #fff; }
+  .col-card .noun-label { font-size: 17px; font-weight: bold; color: #5A4632; padding: 5px 4px 7px; text-transform: capitalize; }
+
+  /* ---------- result screen ---------- */
+  .result-wrap { display:flex; flex-direction:column; align-items:center; flex:1; gap:14px; }
+  .result-img-wrap { position:relative; width:100%; }
+  .result-img { width:100%; border-radius:20px; display:block; }
+  .trophy-overlay {
+    position:absolute; top:2%; left:19%; width:28%; text-align:center;
+    font-size:58px; font-weight:900; color:#7a4f00;
+    text-shadow: 3px 3px 0 #fff,-3px -3px 0 #fff,3px -3px 0 #fff,-3px 3px 0 #fff,0 0 14px #fff8;
+    pointer-events:none; line-height:1.1;
+  }
+  .result-score-box {
+    background:rgba(255,255,255,0.95); border:4px solid #B5780C; border-radius:20px;
+    padding:18px 28px; text-align:center; width:100%; box-shadow:0 4px 0 #e7cda0;
+  }
+  .rscore-line { font-size:22px; color:#5A4632; margin:5px 0; }
+  .rscore-total { font-size:34px; font-weight:900; color:#B5780C; margin-top:12px; border-top:2px dashed #e7cda0; padding-top:10px; }
+
+  /* ---------- tap-the-noun exercise ---------- */
+  .tn-sentence {
+    display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;
+    align-items: center; padding: 10px 0;
+  }
+  .tn-word {
+    font-size: 32px; font-weight: bold; cursor: pointer; user-select: none;
+    background: #FFF6E5; border: 3px solid #E0A23A; border-radius: 16px;
+    padding: 12px 20px; color: #5A4632; box-shadow: 0 4px 0 #c8882a;
+    transition: transform 0.08s;
+  }
+  .tn-word:active { transform: scale(0.94); }
+  .tn-punct { font-size: 32px; font-weight: bold; color: #5A4632; }
+  .tn-word.tn-correct { background: #FFC857; border-color: #B5780C; color: #6b4a14; box-shadow: 0 4px 0 #8a5a0a; }
+  .tn-word.tn-wrong { animation: wobble 0.4s; background: #ffd5d5; border-color: #c0392b; }
+
+  /* ---------- word search exercise ---------- */
+  .ws-fruits {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+    padding: 10px 0 14px;
+  }
+  .ws-fruit-item {
+    position: relative; width: 115px; height: 115px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ws-fruit-item img {
+    width: 115px; height: 115px; object-fit: contain;
+    transition: opacity 0.3s;
+  }
+  .ws-fruit-item.found img { opacity: 0.35; }
+  .ws-fruit-item .ws-check {
+    display: none; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    font-size: 48px; line-height: 1;
+  }
+  .ws-fruit-item.found .ws-check { display: block; }
+  .ws-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 3px;
+    width: 100%;
+    user-select: none;
+  }
+  .ws-cell {
+    aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: clamp(16px, 4.5vw, 34px);
+    font-weight: 900;
+    color: #3a2a00;
+    background: #FFF6E5;
+    border: 2px solid #E0C870;
+    border-radius: 6px;
+    cursor: pointer;
+    touch-action: none;
+    transition: background 0.12s;
+  }
+  .ws-cell.selecting { background: #FFE082; border-color: #F9A825; color: #3a2a00; }
+  .ws-cell.found    { background: #A5D6A7; border-color: #43A047; color: #1b5e20; }
+  .ws-cell.wrong    { background: #EF9A9A; border-color: #e53935; }
+
+  /* ---------- fill-in-blank exercise ---------- */
+  .fib-bank {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+    padding: 10px 0 18px;
+  }
+  .fib-chip {
+    font-size: 32px; font-weight: bold; padding: 12px 26px;
+    background: #FFF6E5; border: 3px solid #E0A23A; border-radius: 16px;
+    color: #5A4632; box-shadow: 0 4px 0 #c8882a;
+    transition: all 0.3s;
+  }
+  .fib-chip.used {
+    text-decoration: line-through; opacity: 0.45;
+    box-shadow: none; border-color: #ccc; background: #f0ece4;
+  }
+  .fib-questions { display: flex; flex-direction: column; gap: 14px; width: 100%; }
+  .fib-row {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+    background: #FFF6E5; border: 3px solid #E0C870; border-radius: 18px;
+    padding: 14px 18px; font-size: 26px; font-weight: bold; color: #3a2a00;
+    transition: background 0.3s, border-color 0.3s;
+  }
+  .fib-row.correct { background: #C8E6C9; border-color: #43A047; }
+  .fib-input {
+    font-size: 26px; font-weight: bold; font-family: inherit;
+    width: 190px; border: none; border-bottom: 4px solid #E0A23A;
+    background: transparent; outline: none; color: #3a2a00;
+    text-align: center; padding: 2px 6px;
+  }
+  .fib-input:disabled { color: #2e7d32; border-color: #43A047; }
+
+  /* ---------- tutorial (teaching) screen ---------- */
+  .tut-wrap { display:flex; flex-direction:column; gap:14px; }
+  .tut-section {
+    border-radius:22px; padding:18px 22px;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.08);
+  }
+  .tut-heading {
+    font-size:21px; font-weight:bold; margin-bottom:8px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .tut-body { font-size:18px; line-height:1.5; margin-bottom:12px; }
+  .tut-examples { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
+  .tut-ex {
+    display:flex; align-items:center; gap:8px;
+    background:rgba(255,255,255,0.75); border-radius:12px;
+    padding:8px 14px; font-size:19px; font-weight:bold;
+  }
+  .tut-arrow { color:#B5780C; font-size:18px; }
+  .tut-s { color:#B5780C; font-weight:900; }
+
+  /* ---------- plural table exercise ---------- */
+  .plural-rule-badge {
+    background:#FFF6E5; border:3px solid #E0A23A; border-radius:16px;
+    padding:11px 18px; font-size:20px; font-weight:bold; color:#5A4632;
+    text-align:center; margin-bottom:12px; box-shadow:0 3px 0 #c8882a;
+  }
+  .plural-table { display:flex; flex-direction:column; gap:9px; width:100%; }
+  .plural-row {
+    display:flex; align-items:center; gap:10px;
+    background:#FFF6E5; border:3px solid #E0C870; border-radius:16px;
+    padding:9px 14px; transition:background 0.3s, border-color 0.3s;
+  }
+  .plural-row.correct { background:#C8E6C9; border-color:#43A047; }
+  .plural-emoji { font-size:28px; width:38px; text-align:center; flex-shrink:0; }
+  .plural-singular {
+    font-size:22px; font-weight:bold; color:#3a2a00;
+    min-width:110px; flex-shrink:0;
+  }
+  .plural-arrow-cell { font-size:20px; color:#B5780C; flex-shrink:0; }
+  .plural-input {
+    font-size:22px; font-weight:bold; font-family:inherit;
+    flex:1; min-width:100px;
+    border:none; border-bottom:4px solid #E0A23A;
+    background:transparent; outline:none; color:#3a2a00; padding:2px 6px;
+  }
+  .plural-input:disabled { color:#2e7d32; border-color:#43A047; }
+</style>
+</head>
+<body>
+<div class="screen" id="screen">
+
+  <!-- ================= MAP SCREEN ================= -->
+  <div class="view active" id="view-map">
+    <div class="map-title">🌿 Lily Pad Pond 🌿</div>
+    <div class="map-fennick-row">
+      <div class="map-speech" id="mapSpeech">Grumble scattered the naming words into the pond! Help me hop across the lily pads, Penny!</div>
+    </div>
+
+    <div class="level-grid" id="levelGrid"></div>
+  </div>
+
+  <!-- ================= LEVEL / QUESTION SCREEN ================= -->
+  <div class="view" id="view-level">
+    <div class="topbar">
+      <div class="map-btn" onclick="showMap()">🏠 Map</div>
+      <div class="level-label" id="levelLabel"></div>
+      <div class="pill-btn" onclick="toggleMusic()" id="musicBtn" title="Toggle music" style="font-size:20px; padding:8px 12px;">🎵</div>
+    </div>
+
+    <div class="prompt-box">
+      <div class="prompt-bubble" id="prompt"></div>
+    </div>
+
+    <div class="q-track-wrap" id="qTrackWrap">
+      <div class="q-track" id="track"></div>
+    </div>
+
+    <div id="qcontainer"></div>
+
+    <div class="feedback" id="feedback"></div>
+    <div class="funfact" id="funfact"></div>
+  </div>
+
+  <!-- ================= RESULT SCREEN ================= -->
+  <div class="view" id="view-result">
+    <div class="result-wrap">
+      <div class="result-img-wrap">
+        <img src="assets/result.png" alt="Result" class="result-img">
+        <div class="trophy-overlay" id="trophyScore"></div>
+      </div>
+      <div class="result-score-box" id="resultScoreBox"></div>
+      <button class="celebrate-btn" id="resultNextBtn" style="width:100%;font-size:26px;margin-top:0;">Next ➜</button>
+    </div>
+  </div>
+
+  <!-- ================= CHAPTER END ================= -->
+  <div class="view" id="view-chapterend">
+    <div class="celebrate">
+      <img src="assets/transparent/frog.png" style="clip-path: inset(0 67% 0 0); transform: scale(2.6) translate(8px,6px);" alt="frog">
+      <h2>🎉 Lily Pad Pond is restored! 🎉</h2>
+      <div class="stars">⭐⭐⭐</div>
+      <p>Fennick and the frog hopped all the way across the pond. Great job, Penny!</p>
+      <button class="celebrate-btn" onclick="showMap()">Back to Map</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* =========================================================
+   DATA
+   ========================================================= */
+
+// ---------- LEVEL 0: Nouns — drag to category ----------
+const level0Data = [{
+  type: 'drag',
+  nouns: [
+    { word:'zoo',         cat:'places',  img:"assets/zoo.png"         },
+    { word:'chair',       cat:'things',  img:"assets/chair.png"       },
+    { word:'rabbit',      cat:'animals', img:"assets/rabbit.png"      },
+    { word:'picture',     cat:'things',  img:"assets/picture.png"     },
+    { word:'bird',        cat:'animals', img:"assets/bird.png"        },
+    { word:'tiger',       cat:'animals', img:"assets/tiger.png"       },
+    { word:'teacher',     cat:'people',  img:"assets/teacher.png"     },
+    { word:'firefighter', cat:'people',  img:"assets/firefighter.png" },
+    { word:'ruler',       cat:'things',  img:"assets/ruler.png"       },
+    { word:'baby',        cat:'people',  img:"assets/baby.png"        },
+    { word:'classroom',   cat:'places',  img:"assets/classroom.png"   },
+    { word:'playground',  cat:'places',  img:"assets/playground.png"  },
+  ]
+},
+
+// Exercise 2 — all 6 sentences on one page
+{
+  type: 'tapnounall',
+  questions: [
+    { sentence:['The','doctor','helps','me','.'],                noun:'doctor',  img:'assets/doctor.png'  },
+    { sentence:['My','mother','is','kind','.'],                  noun:'mother',  img:'assets/mother.png'  },
+    { sentence:['The','student','sits','down','.'],              noun:'student', img:'assets/student.png' },
+    { sentence:['A','dog','runs','fast','.'],                    noun:'dog',     img:'assets/dog.png'     },
+    { sentence:['The','cat','sleeps','on','the','mat','.'],      noun:'cat',     img:'assets/cat.png'     },
+    { sentence:['I','read','a','book','today','.'],              noun:'book',    img:'assets/book.png'    },
+    { sentence:['We','play','in','the','park','.'],              noun:'park',    img:'assets/park.png'    },
+    { sentence:['Mum','cooks','in','the','kitchen','.'],         noun:'kitchen', img:'assets/kitchen.png' },
+    { sentence:['I','draw','a','picture','.'],                   noun:'picture', img:'assets/picture.png' },
+  ]
+},
+
+// Exercise 3 — word search
+{
+  type: 'wordsearch',
+  fruits: [
+    { word:'WATERMELON', img:'assets/exercise3/watermelon.png' },
+    { word:'STRAWBERRY', img:'assets/exercise3/strawberry.png' },
+    { word:'MANGO',      img:'assets/exercise3/mango.png'      },
+    { word:'APPLE',      img:'assets/exercise3/apple.png'      },
+    { word:'BANANA',     img:'assets/exercise3/banana.png'     },
+    { word:'ORANGE',     img:'assets/exercise3/orange.png'     },
+  ],
+  grid: [
+    ['W','A','T','E','R','M','E','L','O','N'],
+    ['P','L','Y','Z','K','Q','V','J','B','C'],
+    ['M','A','N','G','O','F','H','I','T','U'],
+    ['D','E','R','S','K','A','P','P','L','E'],
+    ['G','H','I','J','K','R','M','N','O','P'],
+    ['Q','B','A','N','A','N','A','S','T','U'],
+    ['V','W','X','O','R','A','N','G','E','Y'],
+    ['S','T','R','A','W','B','E','R','R','Y'],
+  ],
+  answers: [
+    { word:'WATERMELON', cells:[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],[0,9]] },
+    { word:'STRAWBERRY', cells:[[7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],[7,8],[7,9]] },
+    { word:'MANGO',      cells:[[2,0],[2,1],[2,2],[2,3],[2,4]] },
+    { word:'APPLE',      cells:[[3,5],[3,6],[3,7],[3,8],[3,9]] },
+    { word:'BANANA',     cells:[[5,1],[5,2],[5,3],[5,4],[5,5],[5,6]] },
+    { word:'ORANGE',     cells:[[6,3],[6,4],[6,5],[6,6],[6,7],[6,8]] },
+  ]
+},
+
+// Exercise 4 — fill in the blank
+{
+  type: 'fillinblank',
+  bank: ['crayons','water','school','dog','teacher','grandmother'],
+  questions: [
+    { before:'Miss Lee is my', after:'.', answer:'teacher' },
+    { before:'My', after:'is near my home.', answer:'school' },
+    { before:'This is a box of', after:'.', answer:'crayons' },
+    { before:'Peter keeps a pet', after:'.', answer:'dog' },
+    { before:'My', after:'loves me.', answer:'grandmother' },
+    { before:'I drink', after:'from a cup.', answer:'water' },
+  ]
+}
+];
+
+// ---------- LEVEL 1: Common Noun vs Proper Noun ----------
+const level1Data = [
+  { type:'classify', word:"park",           proper:false, img:"assets/park.png", fact:"Parks are great for kites and picnics!" },
+  { type:'classify', word:"Mr Wong",        proper:true,  img:"assets/Mr%20Wong.png", fact:"Mr Wong is a person's special name — capital letters for both words!" },
+  { type:'classify', word:"girl",           proper:false, emoji:"👧" },
+  { type:'classify', word:"boy",            proper:false, emoji:"👦" },
+  { type:'classify', word:"computer",       proper:false, emoji:"💻" },
+  { type:'classify', word:"water bottle",   proper:false, emoji:"🧴" },
+  { type:'classify', word:"Changi Airport", proper:true,  emoji:"✈️", fact:"Changi Airport is a special place in Singapore — it needs capital letters!" },
+  { type:'classify', word:"Pastor Tay",     proper:true,  emoji:"🧑‍💼", fact:"Pastor Tay's name is special — both words start with a capital letter!" },
+  { type:'classify', word:"Mrs Ismail",     proper:true,  emoji:"👩‍🏫", fact:"Mrs Ismail's name is special too!" },
+  { type:'classify', word:"kite",           proper:false, emoji:"🪁" },
+
+  // Exercise 2 — word cloud
+  { type:'wordcloud',
+    words:[
+      { word:'school',       proper:false },
+      { word:'Potong Pasir', proper:true  },
+      { word:'Monday',       proper:true  },
+      { word:'Penelope',     proper:true  },
+      { word:'Noah',         proper:true  },
+      { word:'brother',      proper:false },
+      { word:'window',       proper:false },
+      { word:'playground',   proper:false },
+      { word:'apple',        proper:false },
+      { word:'lion',         proper:false },
+      { word:'computer',     proper:false },
+      { word:'handphone',    proper:false },
+      { word:'television',   proper:false },
+    ]
+  },
+
+  // Exercise 3 — gumball paint
+  { type:'gumball',
+    colorKey:[
+      { label:'Common noun', color:'#FF8A80' },
+      { label:'Proper noun', color:'#80B3FF' },
+    ],
+    words:[
+      { word:'September', proper:true  },
+      { word:'bus',       proper:false },
+      { word:'Mr. Smith', proper:true  },
+      { word:'Monday',    proper:true  },
+      { word:'Spot',      proper:true  },
+      { word:'book',      proper:false },
+      { word:'teacher',   proper:false },
+      { word:'dog',       proper:false },
+      { word:'month',     proper:false },
+      { word:'Lily',      proper:true  },
+      { word:'girl',      proper:false },
+      { word:'day',       proper:false },
+    ]
+  }
+];
+
+// ---------- LEVEL 2: Singular & Plural Nouns ----------
+const level2Data = [
+  // Index 0 — Tutorial
+  {
+    type: 'tutorial',
+    sections: [
+      {
+        bg:'#FFF6E5', border:'#E0A23A',
+        icon:'📖', heading:'Singular & Plural',
+        body:'<b>Singular</b> means <b>ONE</b> thing.<br><b>Plural</b> means <b>MORE THAN ONE</b> thing.',
+        examples:[
+          { from:'1 dog 🐶', to:'2 dogs 🐶🐶', add:'' }
+        ]
+      },
+      {
+        bg:'#E8F5E9', border:'#43A047',
+        icon:'🟢', heading:'Rule 1 — Add  -s',
+        body:'For <b>most</b> nouns, just add <b>-s</b> at the end.',
+        examples:[
+          { from:'apple',   to:'apples',   add:'s'  },
+          { from:'boy',     to:'boys',     add:'s'  },
+          { from:'flower',  to:'flowers',  add:'s'  },
+          { from:'teacher', to:'teachers', add:'s'  },
+        ]
+      },
+      {
+        bg:'#E3F2FD', border:'#1E88E5',
+        icon:'🔵', heading:'Rule 2 — Add  -es',
+        body:'If it ends in <b>s</b>, <b>sh</b>, <b>ch</b>, or <b>x</b> — add <b>-es</b>.',
+        examples:[
+          { from:'bus',   to:'buses',   add:'es' },
+          { from:'dish',  to:'dishes',  add:'es' },
+          { from:'match', to:'matches', add:'es' },
+          { from:'box',   to:'boxes',   add:'es' },
+        ]
+      },
+    ]
+  },
+  // Index 1 — Exercise 1: Add -s
+  {
+    type: 'pluraltable',
+    rule: '✏️  Add  -s  to make the plural',
+    words: [
+      { singular:'apple',     plural:'apples',     img:'assets/exercise3/apple.png' },
+      { singular:'boy',       plural:'boys',       emoji:'👦' },
+      { singular:'classroom', plural:'classrooms', img:'assets/classroom.png' },
+      { singular:'flower',    plural:'flowers',    emoji:'🌸' },
+      { singular:'monkey',    plural:'monkeys',    emoji:'🐒' },
+      { singular:'teacher',   plural:'teachers',   img:'assets/teacher.png' },
+    ]
+  },
+  // Index 2 — Exercise 2: Add -es
+  {
+    type: 'pluraltable',
+    rule: '✏️  Add  -es  to make the plural',
+    words: [
+      { singular:'bus',   plural:'buses',   emoji:'🚌' },
+      { singular:'class', plural:'classes', emoji:'🎒' },
+      { singular:'glass', plural:'glasses', emoji:'🥛' },
+      { singular:'kiss',  plural:'kisses',  emoji:'💋' },
+      { singular:'dish',  plural:'dishes',  emoji:'🍽️' },
+      { singular:'match', plural:'matches', emoji:'🔥' },
+      { singular:'torch', plural:'torches', emoji:'🔦' },
+      { singular:'watch', plural:'watches', emoji:'⌚' },
+      { singular:'box',   plural:'boxes',   emoji:'📦' },
+      { singular:'fox',   plural:'foxes',   emoji:'🦊' },
+    ]
+  },
+  // Index 3 — Exercise 3: Choose the correct plural
+  { type:'pluralchoice', singular:'apple',     img:'assets/exercise3/apple.png', correct:'apples',     wrong:'applees'     },
+  { type:'pluralchoice', singular:'bus',       emoji:'🚌', correct:'buses',      wrong:'buss'        },
+  { type:'pluralchoice', singular:'flower',    emoji:'🌸', correct:'flowers',    wrong:'floweres'    },
+  { type:'pluralchoice', singular:'dish',      emoji:'🍽️', correct:'dishes',     wrong:'dishs'       },
+  { type:'pluralchoice', singular:'monkey',    emoji:'🐒', correct:'monkeys',    wrong:'monkeyes'    },
+  { type:'pluralchoice', singular:'match',     emoji:'🔥', correct:'matches',    wrong:'matchs'      },
+  { type:'pluralchoice', singular:'classroom', img:'assets/classroom.png',       correct:'classrooms', wrong:'classroomes' },
+  { type:'pluralchoice', singular:'fox',       emoji:'🦊', correct:'foxes',      wrong:'foxs'        },
+  { type:'pluralchoice', singular:'teacher',   img:'assets/teacher.png',         correct:'teachers',   wrong:'teacheres'   },
+  { type:'pluralchoice', singular:'watch',     emoji:'⌚', correct:'watches',    wrong:'watchs'      },
+  // Index 13 — Exercise 4: How many? Pick singular or plural
+  { type:'countchoice', count:3,  img:'assets/exercise3/apple.png', singular:'apple',     plural:'apples'     },
+  { type:'countchoice', count:1,  emoji:'🚌',                       singular:'bus',       plural:'buses'      },
+  { type:'countchoice', count:4,  emoji:'🦊',                       singular:'fox',       plural:'foxes'      },
+  { type:'countchoice', count:1,  emoji:'🌸',                       singular:'flower',    plural:'flowers'    },
+  { type:'countchoice', count:2,  emoji:'📦',                       singular:'box',       plural:'boxes'      },
+  { type:'countchoice', count:1,  emoji:'🐒',                       singular:'monkey',    plural:'monkeys'    },
+  { type:'countchoice', count:5,  emoji:'🍽️',                      singular:'dish',      plural:'dishes'     },
+  { type:'countchoice', count:1,  img:'assets/teacher.png',         singular:'teacher',   plural:'teachers'   },
+  { type:'countchoice', count:3,  emoji:'⌚',                       singular:'watch',     plural:'watches'    },
+  { type:'countchoice', count:1,  img:'assets/classroom.png',       singular:'classroom', plural:'classrooms' },
+  { type:'countchoice', count:6,  emoji:'🔦',                       singular:'torch',     plural:'torches'    },
+  { type:'countchoice', count:1,  emoji:'🥛',                       singular:'glass',     plural:'glasses'    },
+];
+
+// ---------- LEVEL 3: Telling Time on an Analog Clock ----------
+const level3Data = [
+  // Exercise 1: On the hour (startIdx 0)
+  { type:'clockread', hour:3,  minute:0,  correct:'3:00',  options:['3:00','9:00','6:00','4:00'] },
+  { type:'clockread', hour:6,  minute:0,  correct:'6:00',  options:['6:00','3:00','12:00','8:00'] },
+  { type:'clockread', hour:9,  minute:0,  correct:'9:00',  options:['9:00','3:00','6:00','10:00'] },
+  { type:'clockread', hour:12, minute:0,  correct:'12:00', options:['12:00','6:00','1:00','11:00'] },
+  { type:'clockread', hour:7,  minute:0,  correct:'7:00',  options:['7:00','1:00','8:00','6:00'] },
+  { type:'clockread', hour:11, minute:0,  correct:'11:00', options:['11:00','12:00','2:00','10:00'] },
+  // Exercise 2: Quarter hours (startIdx 6)
+  { type:'clockread', hour:3,  minute:15, correct:'3:15',  options:['3:15','3:30','3:45','3:00'] },
+  { type:'clockread', hour:6,  minute:30, correct:'6:30',  options:['6:30','6:15','6:45','6:00'] },
+  { type:'clockread', hour:9,  minute:45, correct:'9:45',  options:['9:45','9:30','9:15','10:00'] },
+  { type:'clockread', hour:2,  minute:15, correct:'2:15',  options:['2:15','2:30','2:45','2:00'] },
+  { type:'clockread', hour:8,  minute:30, correct:'8:30',  options:['8:30','8:15','8:45','9:00'] },
+  { type:'clockread', hour:4,  minute:45, correct:'4:45',  options:['4:45','4:15','4:30','5:00'] },
+  // Exercise 3: Every 10 minutes (startIdx 12)
+  { type:'clockread', hour:3,  minute:10, correct:'3:10',  options:['3:10','3:20','3:50','4:10'] },
+  { type:'clockread', hour:4,  minute:20, correct:'4:20',  options:['4:20','4:10','4:30','5:20'] },
+  { type:'clockread', hour:5,  minute:40, correct:'5:40',  options:['5:40','5:50','5:30','6:40'] },
+  { type:'clockread', hour:7,  minute:50, correct:'7:50',  options:['7:50','7:40','8:50','7:10'] },
+  { type:'clockread', hour:11, minute:20, correct:'11:20', options:['11:20','11:10','11:30','12:20'] },
+  { type:'clockread', hour:1,  minute:40, correct:'1:40',  options:['1:40','1:30','1:50','2:40'] },
+  // Exercise 4: Every 5 minutes (startIdx 18)
+  { type:'clockread', hour:3,  minute:5,  correct:'3:05',  options:['3:05','3:25','3:35','4:05'] },
+  { type:'clockread', hour:2,  minute:25, correct:'2:25',  options:['2:25','2:20','2:30','3:25'] },
+  { type:'clockread', hour:7,  minute:35, correct:'7:35',  options:['7:35','7:25','7:40','8:35'] },
+  { type:'clockread', hour:10, minute:55, correct:'10:55', options:['10:55','10:50','11:00','11:55'] },
+  { type:'clockread', hour:6,  minute:25, correct:'6:25',  options:['6:25','6:20','6:30','5:25'] },
+  { type:'clockread', hour:8,  minute:5,  correct:'8:05',  options:['8:05','8:10','8:55','9:05'] },
+  // Exercise 5: Exact time (startIdx 24)
+  { type:'clockread', hour:2,  minute:13, correct:'2:13',  options:['2:13','2:15','2:11','2:17'] },
+  { type:'clockread', hour:7,  minute:47, correct:'7:47',  options:['7:47','7:45','7:49','7:43'] },
+  { type:'clockread', hour:11, minute:22, correct:'11:22', options:['11:22','11:20','11:24','11:18'] },
+  { type:'clockread', hour:4,  minute:38, correct:'4:38',  options:['4:38','4:36','4:40','4:34'] },
+  { type:'clockread', hour:9,  minute:51, correct:'9:51',  options:['9:51','9:49','9:53','9:55'] },
+  { type:'clockread', hour:6,  minute:17, correct:'6:17',  options:['6:17','6:15','6:19','6:13'] },
+];
+
+const LEVELS = [
+  { title:"Nouns", sub:"Sort and find the nouns!", data:level0Data, prompt:"Let's learn about nouns!",
+    exercises:[
+      { label:'Exercise 1 — Sort It!',      sub:'Drag each word into the right group',              startIdx:0 },
+      { label:'Exercise 2 — Find the Noun', sub:'Tap the noun in each sentence',                    startIdx:1 },
+      { label:'Exercise 3 — Word Search',   sub:'Find the fruit words hidden in the grid',          startIdx:2 },
+      { label:'Exercise 4 — Fill the Blank',sub:'Type the correct noun to complete each sentence',  startIdx:3 },
+    ]
+  },
+  { title:"Common Noun vs Proper Noun", sub:"Tap each word: is it a common noun or a proper noun?", data:level1Data, prompt:"Is this a common noun or a proper noun?",
+    exercises:[
+      { label:'Exercise 1 — Common or Proper?',  sub:'Is each word a common noun or a proper noun?',  startIdx:0  },
+      { label:'Exercise 2 — Colour the Nouns',   sub:'Choose a colour and highlight the proper nouns', startIdx:10 },
+      { label:'Exercise 3 — Paint the Candies',  sub:'Pick a colour and paint each candy correctly',   startIdx:11 },
+    ]
+  },
+  { title:"Singular & Plural Nouns", sub:"Learn when to add -s or -es!", data:level2Data, prompt:"Let's learn about singular and plural nouns!",
+    exercises:[
+      { label:'Lesson — Singular & Plural',  sub:'Learn the rules for making plurals',  startIdx:0 },
+      { label:'Exercise 1 — Add -s',         sub:'Type the plural by adding -s',              startIdx:1 },
+      { label:'Exercise 2 — Add -es',        sub:'Type the plural by adding -es',             startIdx:2 },
+      { label:'Exercise 3 — Pick the Plural',sub:'Choose the correct plural for each word',   startIdx:3  },
+      { label:'Exercise 4 — How Many?',     sub:'Pick the right word for how many there are', startIdx:13 },
+    ]
+  },
+  { title:"Telling Time", sub:"Read the hands on an analog clock!", data:level3Data, prompt:"What time does the clock show?",
+    exercises:[
+      { label:'Exercise 1 — On the Hour',      sub:'Read the time when the minute hand points to 12', startIdx:0  },
+      { label:'Exercise 2 — Quarter Hours',    sub:'Read times at :15, :30, and :45',                 startIdx:6  },
+      { label:'Exercise 3 — Every 10 Minutes', sub:'Read times at 10-minute intervals',               startIdx:12 },
+      { label:'Exercise 4 — Every 5 Minutes',  sub:'Read times at 5-minute intervals',                startIdx:18 },
+      { label:'Exercise 5 — Exact Time',       sub:'Read the clock to the nearest minute',            startIdx:24 },
+    ]
+  },
+];
+
+/* =========================================================
+   STATE
+   ========================================================= */
+let currentLevel = 0;
+let currentIdx = 0;
+let completed = JSON.parse(localStorage.getItem('wv_unit1_completed') || '[]');
+
+/* =========================================================
+   MAP SCREEN
+   ========================================================= */
+function showMap() {
+  document.getElementById('view-level').classList.remove('active');
+  document.getElementById('view-chapterend').classList.remove('active');
+  document.getElementById('view-map').classList.add('active');
+  renderMap();
+}
+
+function renderMap() {
+  const grid = document.getElementById('levelGrid');
+  grid.innerHTML = '';
+  LEVELS.forEach((lvl, i) => {
+    const done = completed.includes(i);
+    const card = document.createElement('div');
+
+    if (lvl.exercises) {
+      // Level with sub-exercises — show expandable card
+      card.className = 'level-card' + (done ? ' done' : '');
+      card.style.flexDirection = 'column';
+      card.style.alignItems = 'stretch';
+      card.style.cursor = 'default';
+      card.style.justifyContent = 'space-between';
+      card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div>
+            <div class="lname">Level ${i+1}: ${lvl.title}</div>
+            <div class="lsub">${lvl.sub}</div>
+          </div>
+          <div class="lstatus">${done ? '✅' : '📖'}</div>
+        </div>
+      `;
+      lvl.exercises.forEach(ex => {
+        const btn = document.createElement('div');
+        btn.className = 'sublevel-btn';
+        btn.innerHTML = `<span class="sub-label">${ex.label}</span><span class="sub-sub">${ex.sub}</span><span class="sub-arrow">▶️</span>`;
+        btn.onclick = () => startLevel(i, ex.startIdx);
+        card.appendChild(btn);
+      });
+    } else {
+      card.className = 'level-card' + (done ? ' done' : '');
+      card.onclick = () => startLevel(i);
+      card.innerHTML = `
+        <div>
+          <div class="lname">Level ${i+1}: ${lvl.title}</div>
+          <div class="lsub">${lvl.sub}</div>
+        </div>
+        <div class="lstatus">${done ? '✅' : '▶️'}</div>
+      `;
+    }
+    grid.appendChild(card);
+  });
+
+  if (completed.length >= LEVELS.length) {
+    document.getElementById('mapSpeech').textContent = "You restored Lily Pad Pond! Tap any level to play again, or hop over to the next chapter.";
+  } else {
+    document.getElementById('mapSpeech').textContent = "Grumble scattered the naming words into the pond! Help me hop across the lily pads, Penny!";
+  }
+}
+
+/* =========================================================
+   LEVEL ENGINE
+   ========================================================= */
+function startLevel(levelIndex, startIdx = 0) {
+  exerciseScores = [];
+  wrongCount = 0;
+  currentLevel = levelIndex;
+  currentIdx = startIdx;
+  document.getElementById('view-map').classList.remove('active');
+  document.getElementById('view-chapterend').classList.remove('active');
+  document.getElementById('view-level').classList.add('active');
+  document.getElementById('levelLabel').textContent = `Level ${levelIndex+1} — ${LEVELS[levelIndex].title}`;
+  document.getElementById('prompt').textContent = LEVELS[levelIndex].prompt;
+  renderQuestion();
+}
+
+function renderTrack() {
+  const data = LEVELS[currentLevel].data;
+  const q = data[currentIdx];
+  const wrap = document.getElementById('qTrackWrap');
+  const track = document.getElementById('track');
+  track.innerHTML = '';
+
+  // Only show tracker for per-page question types
+  const perPageTypes = ['classify','fillgap','sort','capital','pluralchoice','countchoice','clockread'];
+  if (!q || !perPageTypes.includes(q.type)) {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'flex';
+
+  const { start, end } = getExerciseBounds();
+  for (let i = start; i <= end; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'pad-dot' + (i < currentIdx ? ' done' : (i === currentIdx ? ' current' : ''));
+    track.appendChild(dot);
+  }
+}
+
+function clearFeedback() {
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('funfact').className = 'funfact';
+  document.getElementById('funfact').innerHTML = '';
+}
+
+function showFact(fact) {
+  if (!fact) return;
+  const ff = document.getElementById('funfact');
+  ff.classList.add('show');
+  ff.textContent = fact;
+}
+
+/* Returns the current exercise entry and its question bounds */
+function getExerciseBounds() {
+  const lvl = LEVELS[currentLevel];
+  const data = lvl.data;
+  if (!lvl.exercises) return { ex:null, start:0, end:data.length-1, total:data.length, nextEx:null };
+  const ex = [...lvl.exercises].reverse().find(e => e.startIdx <= currentIdx) || lvl.exercises[0];
+  const exIdx = lvl.exercises.indexOf(ex);
+  const nextEx = lvl.exercises[exIdx + 1] || null;
+  const end = nextEx ? nextEx.startIdx - 1 : data.length - 1;
+  return { ex, exIdx, start:ex.startIdx, end, total: end - ex.startIdx + 1, nextEx };
+}
+
+function renderQuestion() {
+  clearFeedback();
+  renderTrack();
+  const lvl = LEVELS[currentLevel];
+  const q = lvl.data[currentIdx];
+  const c = document.getElementById('qcontainer');
+  c.innerHTML = '';
+
+  // Update level + exercise label in topbar
+  const { ex } = getExerciseBounds();
+  const exPart = ex ? ` · ${ex.label}` : '';
+  document.getElementById('levelLabel').textContent = `Level ${currentLevel+1} — ${lvl.title}${exPart}`;
+
+  // update prompt per question type
+  const promptOverrides = { drag:'Sort the nouns into four groups!', tapnounall:'Tap the noun in each sentence!', wordsearch:'Find the fruit words hidden in the grid!', fillinblank:'Fill in the blank with the correct word!', wordcloud:'Choose a favourite colour and colour all the proper nouns!', gumball:'Pick a colour from the key, then paint each candy!', tutorial:'Read the rules, then click "Got it!" to start!', pluraltable:'Type the plural form of each word!', pluralchoice:'Pick the correct plural!', countchoice:'Pick the right word!', clockread:'What time does the clock show?' };
+  document.getElementById('prompt').textContent = promptOverrides[q.type] || lvl.prompt;
+
+  if (q.type === 'drag') renderDrag(q, c);
+  else if (q.type === 'tapnounall') renderTapnounAll(q, c);
+  else if (q.type === 'wordsearch') renderWordsearch(q, c);
+  else if (q.type === 'fillinblank') renderFillinBlank(q, c);
+  else if (q.type === 'wordcloud') renderWordcloud(q, c);
+  else if (q.type === 'gumball') renderGumball(q, c);
+  else if (q.type === 'tutorial') renderTutorial(q, c);
+  else if (q.type === 'pluralchoice') renderPluralChoice(q, c);
+  else if (q.type === 'countchoice')  renderCountChoice(q, c);
+  else if (q.type === 'pluraltable') renderPluralTable(q, c);
+  else if (q.type === 'classify') renderClassify(q, c);
+  else if (q.type === 'fillgap') renderFillgap(q, c);
+  else if (q.type === 'sort') renderSort(q, c);
+  else if (q.type === 'capital') renderCapital(q, c);
+  else if (q.type === 'clockread') renderClockRead(q, c);
+}
+
+function artHTML(q) {
+  if (q.img) return `<img src="${q.img}" alt="${q.word || ''}">`;
+  if (q.emoji) return `<div class="icon-fallback">${q.emoji}</div>`;
+  return '';
+}
+
+/* ---- Type 0: drag nouns to category ---- */
+function renderDrag(q, c) {
+  wrongCount = 0; // reset for this exercise
+  const CATS = [
+    { key:'people',  label:'People',  icon:'🧑' },
+    { key:'animals', label:'Animals', icon:'🐾' },
+    { key:'things',  label:'Things',  icon:'📦' },
+    { key:'places',  label:'Places',  icon:'📍' },
+  ];
+  const placed = {}; // word → cat key
+  let dragWord = null;
+
+  function rebuild() {
+    c.innerHTML = '';
+
+    // ---- bank ----
+    const bank = document.createElement('div');
+    bank.className = 'noun-bank';
+    const remaining = q.nouns.filter(n => !placed[n.word]);
+    if (remaining.length === 0) {
+      bank.innerHTML = '<div class="noun-bank-empty">All sorted! 🎉</div>';
+    } else {
+      remaining.forEach(n => {
+        const card = document.createElement('div');
+        card.className = 'noun-card';
+        card.draggable = true;
+        card.dataset.word = n.word;
+        card.innerHTML = `<img src="${n.img}" alt="${n.word}"><div class="noun-label">${n.word}</div>`;
+
+        card.addEventListener('dragstart', e => {
+          dragWord = n.word;
+          setTimeout(() => card.classList.add('dragging'), 0);
+          e.dataTransfer.effectAllowed = 'move';
+        });
+        card.addEventListener('dragend', () => {
+          card.classList.remove('dragging');
+          dragWord = null;
+        });
+        bank.appendChild(card);
+      });
+    }
+    c.appendChild(bank);
+
+    // ---- 4-column grid ----
+    const grid = document.createElement('div');
+    grid.className = 'drag-columns';
+
+    CATS.forEach(cat => {
+      const col = document.createElement('div');
+      col.className = 'drag-col';
+      col.dataset.cat = cat.key;
+
+      const inCat = q.nouns.filter(n => placed[n.word] === cat.key);
+      if (inCat.length > 0) col.classList.add('col-done');
+
+      const colCards = inCat.map(n =>
+        `<div class="col-card"><img src="${n.img}" alt="${n.word}"><div class="noun-label">${n.word}</div></div>`
+      ).join('');
+
+      col.innerHTML = `
+        <div class="col-header"><div class="col-icon">${cat.icon}</div>${cat.label}</div>
+        <div class="col-cards">${colCards}</div>
+      `;
+
+      col.addEventListener('dragover', e => {
+        e.preventDefault();
+        col.classList.add('drag-over');
+      });
+      col.addEventListener('dragleave', e => {
+        if (!col.contains(e.relatedTarget)) col.classList.remove('drag-over');
+      });
+      col.addEventListener('drop', e => {
+        e.preventDefault();
+        col.classList.remove('drag-over');
+        if (!dragWord) return;
+        const noun = q.nouns.find(n => n.word === dragWord);
+        if (noun.cat === cat.key) {
+          placed[dragWord] = cat.key;
+          dragWord = null;
+          rebuild();
+          if (Object.keys(placed).length === q.nouns.length) {
+            playPraise();
+            const fb = document.getElementById('feedback');
+            fb.textContent = 'Amazing! You sorted them all! 🎉';
+            fb.className = 'feedback good';
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = 'Next ➜';
+            nextBtn.style.cssText = `display:block;margin:16px auto 0;background:#FFC857;border:4px solid #B5780C;border-radius:18px;padding:14px 36px;font-size:22px;font-weight:bold;color:#6b4a14;cursor:pointer;box-shadow:0 4px 0 #B5780C;font-family:inherit;`;
+            nextBtn.onclick = () => finishExercise('Exercise 1 — Sort It!', q.nouns.length, advance);
+            document.getElementById('qcontainer').appendChild(nextBtn);
+          }
+        } else {
+          wrongCount++;
+          const fb = document.getElementById('feedback');
+          fb.textContent = 'Try another group! 🌱';
+          fb.className = 'feedback try';
+          col.style.animation = 'wobble 0.4s';
+          setTimeout(() => { col.style.animation = ''; }, 400);
+          dragWord = null;
+        }
+      });
+
+      grid.appendChild(col);
+    });
+
+    c.appendChild(grid);
+  }
+
+  rebuild();
+}
+
+/* ---- Type 0b: tap-noun — one question at a time ---- */
+function renderTapnounAll(q, c) {
+  wrongCount = 0; // reset for this exercise
+  let qi = 0;
+
+  function showQ() {
+    c.innerHTML = '';
+    const qn = q.questions[qi];
+    const total = q.questions.length;
+
+    // progress bar
+    const prog = document.createElement('div');
+    prog.style.cssText = 'display:flex;gap:6px;justify-content:center;margin-bottom:14px;';
+    for (let i = 0; i < total; i++) {
+      const dot = document.createElement('div');
+      dot.style.cssText = `width:28px;height:10px;border-radius:6px;background:${i < qi ? '#6FAE4A' : (i === qi ? '#FFC857' : '#e7cda0')};`;
+      prog.appendChild(dot);
+    }
+    c.appendChild(prog);
+
+    // big image
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.cssText = 'min-height:unset;gap:18px;padding:20px;';
+
+    if (qn.img) {
+      const imgEl = document.createElement('img');
+      imgEl.src = qn.img;
+      imgEl.alt = qn.noun;
+      imgEl.style.cssText = 'width:220px;height:220px;object-fit:contain;';
+      card.appendChild(imgEl);
+    }
+
+    // sentence chips
+    const sentWrap = document.createElement('div');
+    sentWrap.className = 'tn-sentence';
+
+    qn.sentence.forEach((w, wi) => {
+      if (/^[.!?,]$/.test(w)) {
+        const sp = document.createElement('span');
+        sp.className = 'tn-punct';
+        sp.textContent = w;
+        sentWrap.appendChild(sp);
+      } else {
+        const chip = document.createElement('div');
+        chip.className = 'tn-word';
+        chip.textContent = w;
+        const isNoun = w.toLowerCase() === qn.noun.toLowerCase();
+        chip.onclick = function() {
+          if (isNoun) {
+            chip.classList.add('tn-correct');
+            // disable all chips
+            sentWrap.querySelectorAll('.tn-word').forEach(el => el.onclick = null);
+            playPraise();
+            const fb = document.getElementById('feedback');
+            if (qi + 1 >= total) {
+              fb.textContent = 'Amazing! You found them all! 🎉';
+              fb.className = 'feedback good';
+              const nextBtn = document.createElement('button');
+              nextBtn.textContent = 'Next ➜';
+              nextBtn.style.cssText = `display:block;margin:16px auto 0;background:#FFC857;border:4px solid #B5780C;border-radius:18px;padding:14px 36px;font-size:22px;font-weight:bold;color:#6b4a14;cursor:pointer;box-shadow:0 4px 0 #B5780C;font-family:inherit;`;
+              nextBtn.onclick = () => finishExercise('Exercise 2 — Find the Noun', q.questions.length, advance);
+              document.getElementById('qcontainer').appendChild(nextBtn);
+            } else {
+              fb.textContent = randomPraise();
+              fb.className = 'feedback good';
+              setTimeout(() => {
+                qi++;
+                document.getElementById('feedback').textContent = '';
+                document.getElementById('feedback').className = 'feedback';
+                showQ();
+              }, 1200);
+            }
+          } else {
+            wrongCount++;
+            chip.classList.add('tn-wrong');
+            setTimeout(() => chip.classList.remove('tn-wrong'), 400);
+            document.getElementById('feedback').textContent = 'Try again! 🌱';
+            document.getElementById('feedback').className = 'feedback try';
+            playWrong();
+          }
+        };
+        sentWrap.appendChild(chip);
+      }
+    });
+
+    card.appendChild(sentWrap);
+    c.appendChild(card);
+  }
+
+  showQ();
+}
+
+/* ---- Type 0c: word search ---- */
+function renderWordsearch(q, c) {
+  // track which answer cells are permanently found
+  const foundCells = new Set(); // "row,col"
+  const foundWords = new Set(); // word string
+  let dragStartCell = null;
+  let isDragging = false;
+  let previewCells = [];
+
+  // --- fruit images row ---
+  const fruitRow = document.createElement('div');
+  fruitRow.className = 'ws-fruits';
+  q.fruits.forEach(f => {
+    const item = document.createElement('div');
+    item.className = 'ws-fruit-item';
+    item.id = 'ws-fruit-' + f.word;
+    const img = document.createElement('img');
+    img.src = f.img;
+    img.alt = '';
+    const check = document.createElement('span');
+    check.className = 'ws-check';
+    check.textContent = '✅';
+    item.appendChild(img);
+    item.appendChild(check);
+    fruitRow.appendChild(item);
+  });
+  c.appendChild(fruitRow);
+
+  // --- grid ---
+  const grid = document.createElement('div');
+  grid.className = 'ws-grid';
+  grid.id = 'ws-grid';
+
+  q.grid.forEach((row, r) => {
+    row.forEach((letter, col) => {
+      const cell = document.createElement('div');
+      cell.className = 'ws-cell';
+      cell.textContent = letter;
+      cell.dataset.r = r;
+      cell.dataset.c = col;
+      grid.appendChild(cell);
+    });
+  });
+  c.appendChild(grid);
+
+  // --- feedback line ---
+  const fb = document.getElementById('feedback');
+
+  // --- helper: get all cells between two points (horizontal only) ---
+  function getCellsBetween(r1, c1, r2, c2) {
+    if (r1 !== r2) return []; // only horizontal supported
+    const cells = [];
+    const step = c2 >= c1 ? 1 : -1;
+    for (let col = c1; col !== c2 + step; col += step) {
+      cells.push([r1, col]);
+    }
+    return cells;
+  }
+
+  function cellEl(r, col) {
+    return grid.querySelector(`.ws-cell[data-r="${r}"][data-c="${col}"]`);
+  }
+
+  function clearPreview() {
+    previewCells.forEach(([r, col]) => {
+      const el = cellEl(r, col);
+      if (el && !foundCells.has(r + ',' + col)) el.classList.remove('selecting');
+    });
+    previewCells = [];
+  }
+
+  function setPreview(cells) {
+    clearPreview();
+    previewCells = cells;
+    cells.forEach(([r, col]) => {
+      const el = cellEl(r, col);
+      if (el && !foundCells.has(r + ',' + col)) el.classList.add('selecting');
+    });
+  }
+
+  function flashWrong(cells) {
+    cells.forEach(([r, col]) => {
+      const el = cellEl(r, col);
+      if (el) { el.classList.add('wrong'); el.classList.remove('selecting'); }
+    });
+    setTimeout(() => {
+      cells.forEach(([r, col]) => {
+        const el = cellEl(r, col);
+        if (el && !foundCells.has(r + ',' + col)) el.classList.remove('wrong');
+      });
+    }, 500);
+  }
+
+  function checkAndMark(cells) {
+    // build word from cells
+    const word = cells.map(([r, col]) => q.grid[r][col]).join('');
+    // check against answers (also try reverse)
+    const matched = q.answers.find(a => {
+      const aCells = a.cells.map(([r, col]) => r + ',' + col).join('|');
+      const sCells = cells.map(([r, col]) => r + ',' + col).join('|');
+      const sCellsRev = [...cells].reverse().map(([r, col]) => r + ',' + col).join('|');
+      return aCells === sCells || aCells === sCellsRev;
+    });
+
+    if (matched && !foundWords.has(matched.word)) {
+      // mark found
+      matched.cells.forEach(([r, col]) => {
+        foundCells.add(r + ',' + col);
+        const el = cellEl(r, col);
+        if (el) { el.classList.remove('selecting', 'wrong'); el.classList.add('found'); }
+      });
+      foundWords.add(matched.word);
+
+      // mark fruit image
+      const fi = document.getElementById('ws-fruit-' + matched.word);
+      if (fi) fi.classList.add('found');
+
+      // praise
+      playPraise();
+      fb.textContent = '🎉 ' + matched.word.charAt(0) + matched.word.slice(1).toLowerCase() + '! Great find!';
+      fb.className = 'feedback good';
+
+      // check if all done
+      if (foundWords.size === q.fruits.length) {
+        fb.textContent = '🎉 You found all the fruits! Amazing!';
+        const nextBtn = document.createElement('button');
+        nextBtn.textContent = 'Next ➜';
+        nextBtn.style.cssText = `display:block;margin:16px auto 0;background:#FFC857;border:4px solid #B5780C;border-radius:18px;padding:14px 36px;font-size:22px;font-weight:bold;color:#6b4a14;cursor:pointer;box-shadow:0 4px 0 #B5780C;font-family:inherit;`;
+        nextBtn.onclick = () => finishExercise('Exercise 3 — Word Search', q.fruits.length, advance);
+        c.appendChild(nextBtn);
+      }
+    } else if (!matched || foundWords.has(matched?.word)) {
+      flashWrong(cells);
+      fb.textContent = 'Keep looking! 🔍';
+      fb.className = 'feedback try';
+    }
+  }
+
+  // --- pointer events for drag selection ---
+  function getCell(e) {
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    return el?.closest?.('.ws-cell');
+  }
+
+  grid.addEventListener('pointerdown', e => {
+    const cell = getCell(e);
+    if (!cell) return;
+    e.preventDefault();
+    grid.setPointerCapture(e.pointerId);
+    isDragging = true;
+    dragStartCell = { r: parseInt(cell.dataset.r), c: parseInt(cell.dataset.c) };
+    setPreview([[dragStartCell.r, dragStartCell.c]]);
+  });
+
+  grid.addEventListener('pointermove', e => {
+    if (!isDragging || !dragStartCell) return;
+    const cell = getCell(e);
+    if (!cell) return;
+    const endR = parseInt(cell.dataset.r);
+    const endC = parseInt(cell.dataset.c);
+    const cells = getCellsBetween(dragStartCell.r, dragStartCell.c, endR, endC);
+    if (cells.length > 0) setPreview(cells);
+  });
+
+  grid.addEventListener('pointerup', e => {
+    if (!isDragging || !dragStartCell) return;
+    isDragging = false;
+    const cell = getCell(e);
+    if (cell) {
+      const endR = parseInt(cell.dataset.r);
+      const endC = parseInt(cell.dataset.c);
+      const cells = getCellsBetween(dragStartCell.r, dragStartCell.c, endR, endC);
+      clearPreview();
+      if (cells.length >= 3) {
+        checkAndMark(cells);
+      }
+    } else {
+      clearPreview();
+    }
+    dragStartCell = null;
+  });
+
+  grid.addEventListener('pointercancel', () => {
+    isDragging = false;
+    dragStartCell = null;
+    clearPreview();
+  });
+}
+
+/* ---- Type 0d: fill in the blank ---- */
+function renderFillinBlank(q, c) {
+  wrongCount = 0;
+  let solvedCount = 0;
+
+  // Word bank row
+  const bank = document.createElement('div');
+  bank.className = 'fib-bank';
+  q.bank.forEach(word => {
+    const chip = document.createElement('div');
+    chip.className = 'fib-chip';
+    chip.textContent = word;
+    chip.id = 'fib-chip-' + word;
+    bank.appendChild(chip);
+  });
+  c.appendChild(bank);
+
+  // Questions
+  const qs = document.createElement('div');
+  qs.className = 'fib-questions';
+
+  q.questions.forEach((qItem, i) => {
+    const row = document.createElement('div');
+    row.className = 'fib-row';
+    row.id = 'fib-row-' + i;
+
+    const beforeSpan = document.createElement('span');
+    beforeSpan.textContent = qItem.before;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'fib-input';
+    input.placeholder = '';
+    input.autocomplete = 'off';
+    input.autocorrect = 'off';
+    input.autocapitalize = 'none';
+    input.spellcheck = false;
+
+    const afterSpan = document.createElement('span');
+    afterSpan.textContent = qItem.after;
+
+    row.appendChild(beforeSpan);
+    row.appendChild(input);
+    row.appendChild(afterSpan);
+    qs.appendChild(row);
+
+    input.addEventListener('input', () => {
+      if (row.classList.contains('correct')) return;
+      const typed = input.value.trim().toLowerCase();
+      if (typed === qItem.answer.toLowerCase()) {
+        // correct
+        row.classList.add('correct');
+        input.disabled = true;
+        input.value = qItem.answer;
+
+        // strike bank chip
+        const chip = document.getElementById('fib-chip-' + qItem.answer);
+        if (chip) chip.classList.add('used');
+
+        playPraise();
+        solvedCount++;
+
+        const fb = document.getElementById('feedback');
+        if (solvedCount === q.questions.length) {
+          fb.textContent = '🎉 All done! You\'re a star!';
+          fb.className = 'feedback good';
+          const nextBtn = document.createElement('button');
+          nextBtn.textContent = 'Next ➜';
+          nextBtn.style.cssText = `display:block;margin:16px auto 0;background:#FFC857;border:4px solid #B5780C;border-radius:18px;padding:14px 36px;font-size:22px;font-weight:bold;color:#6b4a14;cursor:pointer;box-shadow:0 4px 0 #B5780C;font-family:inherit;`;
+          nextBtn.onclick = () => finishExercise('Exercise 4 — Fill the Blank', q.questions.length, advance);
+          c.appendChild(nextBtn);
+        } else {
+          fb.textContent = randomPraise();
+          fb.className = 'feedback good';
+          setTimeout(() => { fb.textContent = ''; fb.className = 'feedback'; }, 1500);
+        }
+      }
+    });
+  });
+
+  c.appendChild(qs);
+}
+
+/* ---- Type 0b: tap the noun (single, unused) ---- */
+function renderTapnoun(q, c) {
+  const parts = q.sentence.map((w, i) => {
+    const isPunct = /^[.!?,]$/.test(w);
+    return isPunct
+      ? `<span class="tn-punct">${w}</span>`
+      : `<div class="tn-word" id="tnw${i}">${w}</div>`;
+  }).join('');
+
+  c.innerHTML = `<div class="card" style="min-height:160px;"><div class="tn-sentence">${parts}</div></div>`;
+
+  q.sentence.forEach((w, i) => {
+    if (/^[.!?,]$/.test(w)) return;
+    document.getElementById(`tnw${i}`).onclick = function() {
+      if (w.toLowerCase() === q.noun.toLowerCase()) {
+        this.classList.add('tn-correct');
+        // disable all other words
+        q.sentence.forEach((_, j) => {
+          const el = document.getElementById(`tnw${j}`);
+          if (el) el.onclick = null;
+        });
+        handleResult(true, null, null);
+      } else {
+        this.classList.add('tn-wrong');
+        setTimeout(() => this.classList.remove('tn-wrong'), 400);
+        document.getElementById('feedback').textContent = 'Try again! 🌱';
+        document.getElementById('feedback').className = 'feedback try';
+        playWrong();
+      }
+    };
+  });
+}
+
+/* ---- Type 0e: word cloud — highlight the proper nouns ---- */
+function renderWordcloud(q, c) {
+  const COLORS = [
+    '#FFF176', '#C8F0C8', '#B3E5FC', '#E1BEE7', '#FFCCBC', '#F8BBD9'
+  ];
+  const COLOR_NAMES = ['Yellow','Green','Blue','Lavender','Peach','Pink'];
+  let selectedColor = COLORS[0];
+  const highlighted = {}; // word → hex or null
+  q.words.forEach(w => { highlighted[w.word] = null; });
+
+  // Colour picker row
+  const palRow = document.createElement('div');
+  palRow.className = 'wc-palette-row';
+  const palLabel = document.createElement('span');
+  palLabel.className = 'wc-palette-label';
+  palLabel.textContent = '🖍️ Pick a colour:';
+  palRow.appendChild(palLabel);
+  const penEls = [];
+  COLORS.forEach((col, i) => {
+    const pen = document.createElement('div');
+    pen.className = 'wc-pen' + (i === 0 ? ' selected' : '');
+    pen.style.background = col;
+    pen.title = COLOR_NAMES[i];
+    pen.addEventListener('click', () => {
+      selectedColor = col;
+      penEls.forEach(p => p.classList.remove('selected'));
+      pen.classList.add('selected');
+    });
+    penEls.push(pen);
+    palRow.appendChild(pen);
+  });
+  c.appendChild(palRow);
+
+  // Big word box
+  const box = document.createElement('div');
+  box.className = 'wc-box';
+
+  const shuffled = [...q.words].sort(() => Math.random() - 0.5);
+  const sizes = [30, 32, 34, 36, 38, 40];
+  const rots  = [-5, -3, -1, 0, 0, 1, 3, 5];
+
+  shuffled.forEach(w => {
+    const chip = document.createElement('span');
+    chip.className = 'wc-word';
+    chip.textContent = w.word;
+    chip.dataset.word = w.word;
+    const fs  = sizes[Math.floor(Math.random() * sizes.length)];
+    const rot = rots[Math.floor(Math.random() * rots.length)];
+    const mx  = 18 + Math.floor(Math.random() * 28);
+    const my  = 12 + Math.floor(Math.random() * 18);
+    chip.style.cssText = `font-size:${fs}px; transform:rotate(${rot}deg); margin:${my}px ${mx}px; display:inline-block;`;
+    chip.addEventListener('click', () => {
+      if (highlighted[w.word] === selectedColor) {
+        highlighted[w.word] = null;
+        chip.style.background = 'transparent';
+        chip.classList.remove('highlighted');
+      } else {
+        highlighted[w.word] = selectedColor;
+        chip.style.background = selectedColor;
+        chip.classList.add('highlighted');
+      }
+    });
+    box.appendChild(chip);
+  });
+  c.appendChild(box);
+
+  // Check button
+  const checkBtn = document.createElement('button');
+  checkBtn.textContent = 'Check ✓';
+  checkBtn.style.cssText = `display:block;margin:0 auto 12px;background:#9CDC76;border:4px solid #6FAE4A;border-radius:18px;padding:14px 40px;font-size:22px;font-weight:bold;color:#3d5c28;cursor:pointer;box-shadow:0 4px 0 #6FAE4A;font-family:inherit;`;
+  c.appendChild(checkBtn);
+
+  const fb = document.getElementById('feedback');
+
+  checkBtn.addEventListener('click', () => {
+    let allCorrect = true;
+    q.words.forEach(w => {
+      const chip = box.querySelector(`[data-word="${CSS.escape(w.word)}"]`);
+      const isHighlighted = !!highlighted[w.word];
+      if (isHighlighted !== w.proper) {
+        allCorrect = false;
+        chip.classList.add('wrong-flash');
+        setTimeout(() => {
+          chip.classList.remove('wrong-flash', 'highlighted');
+          highlighted[w.word] = null;
+          chip.style.background = 'transparent';
+        }, 600);
+      }
+    });
+
+    if (allCorrect) {
+      checkBtn.remove();
+      playPraise();
+      fb.textContent = '🎉 Perfect! You highlighted all the proper nouns!';
+      fb.className = 'feedback good';
+      const { ex, total, nextEx } = getExerciseBounds();
+      const onNext = nextEx ? advance : levelComplete;
+      const nextBtn = document.createElement('button');
+      nextBtn.textContent = 'Next ➜';
+      nextBtn.style.cssText = `display:block;margin:16px auto 0;background:#FFC857;border:4px solid #B5780C;border-radius:18px;padding:14px 36px;font-size:22px;font-weight:bold;color:#6b4a14;cursor:pointer;box-shadow:0 4px 0 #B5780C;font-family:inherit;`;
+      nextBtn.onclick = () => finishExercise(ex?.label || 'Exercise 2', q.words.length, onNext);
+      c.appendChild(nextBtn);
+    } else {
+      playWrong();
+      fb.textContent = 'Some are wrong — try again! 🌱';
+      fb.className = 'feedback try';
+    }
+  });
+}
+
+/* ---- Type 0f: gumball paint ---- */
+function renderGumball(q, c) {
+  let selectedColor = null;
+  const painted = {}; // word → color or null
+  q.words.forEach(w => { painted[w.word] = null; });
+
+  // Color key / swatches
+  const keyRow = document.createElement('div');
+  keyRow.className = 'gb-key';
+  const swatchEls = [];
+  q.colorKey.forEach((ck, i) => {
+    const sw = document.createElement('div');
+    sw.className = 'gb-swatch';
+    sw.style.background = ck.color;
+    sw.innerHTML = `<span>🖌️</span><span>${ck.label}</span>`;
+    sw.addEventListener('click', () => {
+      selectedColor = ck.color;
+      swatchEls.forEach(s => s.classList.remove('active'));
+      sw.classList.add('active');
+      grid.classList.add('brush-ready');
+    });
+    swatchEls.push(sw);
+    keyRow.appendChild(sw);
+  });
+  c.appendChild(keyRow);
+
+  // Candy jar
+  const jarWrap = document.createElement('div');
+  jarWrap.className = 'gb-jar-wrap';
+  jarWrap.innerHTML = `
+  <svg class="gb-jar-svg" viewBox="0 0 600 580" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="lidG" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#E8B84B"/>
+        <stop offset="100%" stop-color="#A0721A"/>
+      </linearGradient>
+      <linearGradient id="glassG" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%"   stop-color="#FFF8DC" stop-opacity="0.55"/>
+        <stop offset="30%"  stop-color="#FFFDE8" stop-opacity="0.75"/>
+        <stop offset="70%"  stop-color="#FFFDE8" stop-opacity="0.75"/>
+        <stop offset="100%" stop-color="#F0E8C0" stop-opacity="0.55"/>
+      </linearGradient>
+    </defs>
+
+    <!-- Lid knob -->
+    <rect x="255" y="8" width="90" height="22" rx="11"
+          fill="url(#lidG)" stroke="#7D5014" stroke-width="2.5"/>
+    <!-- Lid -->
+    <rect x="155" y="28" width="290" height="46" rx="14"
+          fill="url(#lidG)" stroke="#7D5014" stroke-width="3"/>
+
+    <!-- Neck -->
+    <rect x="195" y="74" width="210" height="30"
+          fill="#FFFDE8" fill-opacity="0.7" stroke="#C4903A" stroke-width="3"/>
+
+    <!-- Jar body -->
+    <path d="M 90 104 L 510 104 L 528 460 Q 530 545 300 548 Q 70 545 72 460 Z"
+          fill="url(#glassG)" stroke="#C4903A" stroke-width="4" stroke-linejoin="round"/>
+
+    <!-- Left glass shine -->
+    <path d="M 115 120 Q 110 300 118 450"
+          stroke="white" stroke-width="14" stroke-opacity="0.45"
+          stroke-linecap="round" fill="none"/>
+    <!-- Small right shine -->
+    <path d="M 475 130 Q 480 220 472 300"
+          stroke="white" stroke-width="7" stroke-opacity="0.25"
+          stroke-linecap="round" fill="none"/>
+  </svg>`;
+  const grid = document.createElement('div');
+  grid.className = 'gb-jar';
+  jarWrap.appendChild(grid);
+  c.appendChild(jarWrap);
+
+  const shuffled = [...q.words].sort(() => Math.random() - 0.5);
+  shuffled.forEach(w => {
+    const bubble = document.createElement('div');
+    bubble.className = 'gb-bubble';
+    bubble.textContent = w.word;
+    bubble.dataset.word = w.word;
+    // Size based on word length so longer words get bigger circles
+    const len = w.word.length;
+    const sz  = Math.round(92 + Math.min(len * 7, 58)); // 92px (short) → 150px (long)
+    // Font capped by both a percentage and a per-char limit to prevent overflow
+    const fs  = Math.round(Math.min(sz * 0.22, sz * 1.25 / len));
+    const mt  = 3 + Math.floor(Math.random() * 7);
+    const mh  = 2 + Math.floor(Math.random() * 5);
+    bubble.style.cssText = `width:${sz}px;height:${sz}px;font-size:${fs}px;margin:${mt}px ${mh}px;`;
+    bubble.addEventListener('click', () => {
+      if (!selectedColor) return;
+      painted[w.word] = selectedColor;
+      bubble.style.background = selectedColor;
+      bubble.style.borderColor = selectedColor;
+    });
+    grid.appendChild(bubble);
+  });
+
+  // Check button
+  const checkBtn = document.createElement('button');
+  checkBtn.textContent = 'Check ✓';
+  checkBtn.style.cssText = `display:block;margin:0 auto 12px;background:#9CDC76;border:4px solid #6FAE4A;border-radius:18px;padding:14px 40px;font-size:22px;font-weight:bold;color:#3d5c28;cursor:pointer;box-shadow:0 4px 0 #6FAE4A;font-family:inherit;`;
+  c.appendChild(checkBtn);
+
+  const fb = document.getElementById('feedback');
+  const commonColor = q.colorKey.find(k => k.label.toLowerCase().includes('common'))?.color;
+  const properColor = q.colorKey.find(k => k.label.toLowerCase().includes('proper'))?.color;
+
+  checkBtn.addEventListener('click', () => {
+    let allCorrect = true;
+    q.words.forEach(w => {
+      const bubble = grid.querySelector(`[data-word="${CSS.escape(w.word)}"]`);
+      const expected = w.proper ? properColor : commonColor;
+      if (painted[w.word] !== expected) {
+        allCorrect = false;
+        bubble.classList.add('wrong-flash');
+        setTimeout(() => {
+          bubble.classList.remove('wrong-flash');
+          painted[w.word] = null;
+          bubble.style.background = '#f5f0e8';
+          bubble.style.borderColor = '#C8B89A';
+        }, 600);
+      }
+    });
+
+    if (allCorrect) {
+      checkBtn.remove();
+      playPraise();
+      fb.textContent = '🍬 Amazing! Every candy is painted correctly!';
+      fb.className = 'feedback good';
+      const { ex, total, nextEx } = getExerciseBounds();
+      const onNext = nextEx ? advance : levelComplete;
+      const nextBtn = document.createElement('button');
+      nextBtn.textContent = 'Next ➜';
+      nextBtn.style.cssText = `display:block;margin:16px auto 0;background:#FFC857;border:4px solid #B5780C;border-radius:18px;padding:14px 36px;font-size:22px;font-weight:bold;color:#6b4a14;cursor:pointer;box-shadow:0 4px 0 #B5780C;font-family:inherit;`;
+      nextBtn.onclick = () => finishExercise(ex?.label || 'Exercise 3', q.words.length, onNext);
+      c.appendChild(nextBtn);
+    } else {
+      playWrong();
+      fb.textContent = 'Some are wrong — try again! 🌱';
+      fb.className = 'feedback try';
+    }
+  });
+}
+
+/* ---- PluralChoice: pick the correct plural ---- */
+function renderPluralChoice(q, c) {
+  // Randomise which side the correct answer appears on
+  const showCorrectFirst = Math.random() < 0.5;
+  const optA = showCorrectFirst ? q.correct : q.wrong;
+  const optB = showCorrectFirst ? q.wrong   : q.correct;
+
+  const art = q.img
+    ? `<img src="${q.img}" alt="${q.singular}" style="width:130px;height:130px;object-fit:contain;">`
+    : `<div class="icon-fallback" style="font-size:90px;width:auto;height:auto;">${q.emoji}</div>`;
+  c.innerHTML = `
+    <div class="card" style="min-height:180px;gap:12px;">
+      ${art}
+      <div class="word" style="font-size:38px;">${q.singular}</div>
+    </div>
+    <div class="choice-row" style="margin-top:8px;">
+      <div class="choice" id="pcA" style="font-size:26px;min-height:80px;">${optA}</div>
+      <div class="choice" id="pcB" style="font-size:26px;min-height:80px;">${optB}</div>
+    </div>
+  `;
+
+  function pick(chosen, btnEl) {
+    const correct = (chosen === q.correct);
+    if (correct) {
+      // Lock buttons only on correct so wrong taps stay clickable
+      document.getElementById('pcA').onclick = null;
+      document.getElementById('pcB').onclick = null;
+    }
+    handleResult(correct, btnEl, null);
+  }
+
+  document.getElementById('pcA').onclick = () => pick(optA, document.getElementById('pcA'));
+  document.getElementById('pcB').onclick = () => pick(optB, document.getElementById('pcB'));
+}
+
+/* ---- CountChoice: pick singular or plural based on count ---- */
+function renderCountChoice(q, c) {
+  const correct = q.count === 1 ? q.singular : q.plural;
+  const wrong   = q.count === 1 ? q.plural   : q.singular;
+  const showCorrectFirst = Math.random() < 0.5;
+  const optA = showCorrectFirst ? correct : wrong;
+  const optB = showCorrectFirst ? wrong   : correct;
+
+  let artHTML;
+  if (q.img) {
+    artHTML = `<img src="${q.img}" alt="${q.singular}" style="width:110px;height:110px;object-fit:contain;">`;
+  } else {
+    const displayCount = Math.min(q.count, 6);
+    const emojiRow = Array(displayCount).fill(q.emoji).join(' ');
+    artHTML = `<div style="font-size:52px;line-height:1.3;">${emojiRow}</div>`;
+  }
+
+  c.innerHTML = `
+    <div class="card" style="min-height:180px;gap:10px;">
+      ${artHTML}
+      <div style="font-size:52px;font-weight:900;color:#B5780C;">${q.count}</div>
+      <div style="font-size:22px;color:#9b8568;font-weight:bold;">${q.count === 1 ? 'one' : 'more than one'}</div>
+    </div>
+    <div class="choice-row" style="margin-top:8px;">
+      <div class="choice" id="ccA" style="font-size:26px;min-height:80px;">${optA}</div>
+      <div class="choice" id="ccB" style="font-size:26px;min-height:80px;">${optB}</div>
+    </div>
+  `;
+
+  function pick(chosen, btnEl) {
+    const isCorrect = (chosen === correct);
+    if (isCorrect) {
+      document.getElementById('ccA').onclick = null;
+      document.getElementById('ccB').onclick = null;
+    }
+    handleResult(isCorrect, btnEl, null);
+  }
+
+  document.getElementById('ccA').onclick = () => pick(optA, document.getElementById('ccA'));
+  document.getElementById('ccB').onclick = () => pick(optB, document.getElementById('ccB'));
+}
+
+/* ---- Tutorial: teaching screen ---- */
+function renderTutorial(q, c) {
+  const wrap = document.createElement('div');
+  wrap.className = 'tut-wrap';
+
+  q.sections.forEach(sec => {
+    const box = document.createElement('div');
+    box.className = 'tut-section';
+    box.style.cssText = `background:${sec.bg};border:4px solid ${sec.border};`;
+
+    const heading = document.createElement('div');
+    heading.className = 'tut-heading';
+    heading.innerHTML = `<span>${sec.icon}</span><span>${sec.heading}</span>`;
+    box.appendChild(heading);
+
+    const body = document.createElement('div');
+    body.className = 'tut-body';
+    body.innerHTML = sec.body;
+    box.appendChild(body);
+
+    if (sec.examples && sec.examples.length) {
+      const exRow = document.createElement('div');
+      exRow.className = 'tut-examples';
+      sec.examples.forEach(ex => {
+        const el = document.createElement('div');
+        el.className = 'tut-ex';
+        // If add is empty, just render plain text on both sides
+        let toHTML;
+        if (!ex.add) {
+          toHTML = ex.to;
+        } else {
+          const base = ex.to.slice(0, ex.to.length - ex.add.length);
+          toHTML = `${base}<span class="tut-s">${ex.add}</span>`;
+        }
+        el.innerHTML = `<span>${ex.from}</span><span class="tut-arrow">→</span><span>${toHTML}</span>`;
+        exRow.appendChild(el);
+      });
+      box.appendChild(exRow);
+    }
+
+    wrap.appendChild(box);
+  });
+
+  c.appendChild(wrap);
+
+  const gotItBtn = document.createElement('button');
+  gotItBtn.textContent = "Got it!  Let's practise ➜";
+  gotItBtn.style.cssText = `display:block;margin:20px auto 0;background:#FFC857;border:4px solid #B5780C;border-radius:18px;padding:14px 36px;font-size:22px;font-weight:bold;color:#6b4a14;cursor:pointer;box-shadow:0 4px 0 #B5780C;font-family:inherit;`;
+  gotItBtn.onclick = () => advance();
+  c.appendChild(gotItBtn);
+}
+
+/* ---- Plural Table: type the plural ---- */
+function renderPluralTable(q, c) {
+  let solvedCount = 0;
+
+  const badge = document.createElement('div');
+  badge.className = 'plural-rule-badge';
+  badge.textContent = q.rule;
+  c.appendChild(badge);
+
+  const table = document.createElement('div');
+  table.className = 'plural-table';
+
+  q.words.forEach((item, i) => {
+    const row = document.createElement('div');
+    row.className = 'plural-row';
+
+    const emoji = document.createElement('div');
+    emoji.className = 'plural-emoji';
+    if (item.img) {
+      const im = document.createElement('img');
+      im.src = item.img; im.alt = item.singular;
+      im.style.cssText = 'width:38px;height:38px;object-fit:contain;';
+      emoji.appendChild(im);
+    } else {
+      emoji.textContent = item.emoji || '';
+    }
+
+    const singular = document.createElement('div');
+    singular.className = 'plural-singular';
+    singular.textContent = item.singular;
+
+    const arrow = document.createElement('div');
+    arrow.className = 'plural-arrow-cell';
+    arrow.textContent = '→';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'plural-input';
+    input.placeholder = '?';
+    input.autocomplete = 'off';
+    input.autocorrect = 'off';
+    input.autocapitalize = 'none';
+    input.spellcheck = false;
+
+    const checkBtn = document.createElement('button');
+    checkBtn.textContent = '✓';
+    checkBtn.style.cssText = `font-size:20px;font-weight:bold;font-family:inherit;padding:6px 16px;background:#9CDC76;border:3px solid #6FAE4A;border-radius:12px;color:#3d5c28;cursor:pointer;box-shadow:0 3px 0 #6FAE4A;flex-shrink:0;`;
+
+    row.appendChild(emoji);
+    row.appendChild(singular);
+    row.appendChild(arrow);
+    row.appendChild(input);
+    row.appendChild(checkBtn);
+    table.appendChild(row);
+
+    function checkAnswer() {
+      if (row.classList.contains('correct')) return;
+      if (input.value.trim().toLowerCase() === item.plural.toLowerCase()) {
+        row.classList.add('correct');
+        input.disabled = true;
+        input.value = item.plural;
+        checkBtn.disabled = true;
+        checkBtn.style.opacity = '0.4';
+        playPraise();
+        solvedCount++;
+        const fb = document.getElementById('feedback');
+        if (solvedCount === q.words.length) {
+          fb.textContent = '🎉 Amazing! You got them all!';
+          fb.className = 'feedback good';
+          const { ex, total, nextEx } = getExerciseBounds();
+          const onNext = nextEx ? advance : levelComplete;
+          const nextBtn = document.createElement('button');
+          nextBtn.textContent = 'Next ➜';
+          nextBtn.style.cssText = `display:block;margin:16px auto 0;background:#FFC857;border:4px solid #B5780C;border-radius:18px;padding:14px 36px;font-size:22px;font-weight:bold;color:#6b4a14;cursor:pointer;box-shadow:0 4px 0 #B5780C;font-family:inherit;`;
+          nextBtn.onclick = () => finishExercise(ex?.label || 'Exercise', q.words.length, onNext);
+          c.appendChild(nextBtn);
+        } else {
+          fb.textContent = randomPraise();
+          fb.className = 'feedback good';
+          setTimeout(() => { fb.textContent = ''; fb.className = 'feedback'; }, 1500);
+        }
+      } else {
+        playWrong();
+        row.style.animation = 'wobble 0.4s';
+        setTimeout(() => { row.style.animation = ''; }, 400);
+        const fb = document.getElementById('feedback');
+        fb.textContent = 'Not quite — try again! 🌱';
+        fb.className = 'feedback try';
+        setTimeout(() => { fb.textContent = ''; fb.className = 'feedback'; }, 1500);
+      }
+    }
+
+    checkBtn.addEventListener('click', checkAnswer);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') checkAnswer(); });
+  });
+
+  c.appendChild(table);
+}
+
+/* ---- Type 1: classify (common vs proper noun) ---- */
+function renderClassify(q, c) {
+  c.innerHTML = `
+    <div style="display:flex;gap:20px;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:20px;">
+      <div class="card" style="flex:1;min-width:200px;max-width:320px;margin:0;">
+        ${artHTML(q)}
+        <div class="word">${q.word}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:20px;flex:1;min-width:180px;max-width:300px;">
+        <div class="choice classify-btn" id="opt0">Common noun</div>
+        <div class="choice classify-btn" id="opt1">Proper noun</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('opt0').onclick = () => answerClassify(false, q);
+  document.getElementById('opt1').onclick = () => answerClassify(true, q);
+}
+function answerClassify(saysProper, q) {
+  const correct = (saysProper === q.proper);
+  const btn = document.getElementById(saysProper ? 'opt1' : 'opt0');
+  handleResult(correct, btn, q.fact);
+}
+
+/* ---- Type 2: fill the gap ---- */
+function renderFillgap(q, c) {
+  const sentence = q.sentence.replace('___', '<span class="blank">_____</span>');
+  let opts = '';
+  q.options.forEach((o, i) => {
+    const art = o.img ? `<img src="${o.img}" alt="${o.label}">` : `<div class="emoji">${o.emoji}</div>`;
+    opts += `<div class="choice" id="fopt${i}">${art}<div>${o.label}</div></div>`;
+  });
+  c.innerHTML = `
+    <div class="card"><div class="sentence">${sentence}</div></div>
+    <div class="choice-row">${opts}</div>
+  `;
+  q.options.forEach((o, i) => {
+    document.getElementById(`fopt${i}`).onclick = () => answerFillgap(o, q, document.getElementById(`fopt${i}`));
+  });
+}
+function answerFillgap(opt, q, btn) {
+  const correct = (opt.label === q.answer);
+  handleResult(correct, btn, q.fact, () => {
+    // show completed sentence
+    document.querySelector('.sentence').innerHTML = q.sentence.replace('___', `<span class="blank">${q.answer}</span>`);
+  });
+}
+
+/* ---- Type 3: sort the nouns ---- */
+function renderSort(q, c) {
+  let opts = '';
+  sortCategories.forEach((cat, i) => {
+    opts += `<div class="choice ${i===1?'alt':(i===2?'special':'')}" id="sopt${i}">${cat.icon}<div>${cat.label}</div></div>`;
+  });
+  c.innerHTML = `
+    <div class="card">
+      ${artHTML(q)}
+      <div class="word">${q.word}</div>
+    </div>
+    <div class="choice-row">${opts}</div>
+  `;
+  sortCategories.forEach((cat, i) => {
+    document.getElementById(`sopt${i}`).onclick = () => answerSort(cat, q, document.getElementById(`sopt${i}`));
+  });
+}
+function answerSort(cat, q, btn) {
+  const correct = (cat.key === q.cat);
+  handleResult(correct, btn, q.fact);
+}
+
+/* ---- Type 4: capital letter hunt ---- */
+function renderCapital(q, c) {
+  let chips = '';
+  q.words.forEach((w, i) => {
+    const isTarget = q.targets.includes(i);
+    const isPunct = /^[.!?]$/.test(w);
+    chips += `<div class="chip ${isTarget ? 'target' : 'static'}" id="chip${i}" data-word="${w}">${isPunct ? w : w}</div>`;
+  });
+  c.innerHTML = `<div class="card"><div class="word-chips">${chips}</div></div>`;
+  q._done = new Set();
+  q.words.forEach((w, i) => {
+    if (q.targets.includes(i)) {
+      const el = document.getElementById(`chip${i}`);
+      el.onclick = () => tapCapital(q, i, el);
+    } else {
+      document.getElementById(`chip${i}`).style.cursor = 'default';
+    }
+  });
+}
+function capitalize(w) {
+  return w.charAt(0).toUpperCase() + w.slice(1);
+}
+function tapCapital(q, i, el) {
+  if (el.classList.contains('done')) return;
+  el.classList.add('done');
+  el.textContent = capitalize(q.words[i]);
+  q._done.add(i);
+  if (q._done.size === q.targets.length) {
+    handleResult(true, null, q.fact);
+  }
+}
+
+/* ---- Analog clock SVG generator ---- */
+function makeClockSVG(hour, minute) {
+  const r = 88, cx = 100, cy = 100;
+  const minRad = (minute / 60) * 2 * Math.PI;
+  const hrRad  = ((hour % 12 + minute / 60) / 12) * 2 * Math.PI;
+  function pt(a, len) { return [+(cx + len * Math.sin(a)).toFixed(2), +(cy - len * Math.cos(a)).toFixed(2)]; }
+  let ticks = '';
+  for (let i = 0; i < 60; i++) {
+    const a = (i / 60) * 2 * Math.PI;
+    const isHour = i % 5 === 0;
+    const [x1, y1] = pt(a, isHour ? r * 0.78 : r * 0.88);
+    const [x2, y2] = pt(a, r);
+    ticks += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${isHour ? '#8B6914' : '#C4A030'}" stroke-width="${isHour ? 2.5 : 1.2}" stroke-linecap="round"/>`;
+  }
+  let nums = '';
+  for (let i = 1; i <= 12; i++) {
+    const a = (i / 12) * 2 * Math.PI;
+    const [nx, ny] = pt(a, r * 0.64);
+    nums += `<text x="${nx}" y="${ny}" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="900" font-family="Arial,sans-serif" fill="#5A4632">${i}</text>`;
+  }
+  const [mx, my] = pt(minRad, r * 0.80);
+  const [hx, hy] = pt(hrRad,  r * 0.52);
+  return `<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><circle cx="${cx}" cy="${cy}" r="${r}" fill="#FFFBF0" stroke="#B5780C" stroke-width="5"/><circle cx="${cx}" cy="${cy}" r="${r - 5}" fill="none" stroke="#FFE08A" stroke-width="1.5"/>${ticks}${nums}<line x1="${cx}" y1="${cy}" x2="${hx}" y2="${hy}" stroke="#3a2a00" stroke-width="7" stroke-linecap="round"/><line x1="${cx}" y1="${cy}" x2="${mx}" y2="${my}" stroke="#B5780C" stroke-width="4.5" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="6" fill="#3a2a00"/><circle cx="${cx}" cy="${cy}" r="2.5" fill="#FFC857"/></svg>`;
+}
+
+/* ---- Type clockread: analog clock multiple choice ---- */
+function renderClockRead(q, c) {
+  const shuffled = [...q.options].sort(() => Math.random() - 0.5);
+  c.innerHTML = `
+    <div class="card" style="min-height:unset;padding:20px;gap:10px;">
+      ${makeClockSVG(q.hour, q.minute)}
+      <div style="font-size:19px;color:#9b8568;font-weight:bold;">What time does the clock show?</div>
+    </div>
+    <div class="choice-row" style="margin-top:10px;">
+      ${shuffled.map((o, i) => `<div class="choice" id="copt${i}" style="font-size:22px;font-weight:bold;min-height:70px;">${o}</div>`).join('')}
+    </div>
+  `;
+  shuffled.forEach((o, i) => {
+    const btn = document.getElementById(`copt${i}`);
+    btn.onclick = () => {
+      const correct = (o === q.correct);
+      if (correct) shuffled.forEach((_, j) => { const e = document.getElementById(`copt${j}`); if (e) e.onclick = null; });
+      handleResult(correct, btn, null);
+    };
+  });
+}
+
+/* ---- shared result handler ---- */
+function handleResult(correct, btnEl, fact, onCorrect) {
+  const fb = document.getElementById('feedback');
+  if (correct) {
+    playPraise();
+    if (btnEl) btnEl.classList.add('correct');
+    fb.textContent = randomPraise();
+    fb.className = 'feedback good';
+    showFact(fact);
+    if (onCorrect) onCorrect();
+
+    const lvl = LEVELS[currentLevel];
+    const { ex, end, total, nextEx } = getExerciseBounds();
+    const isLastQ = currentIdx >= end;
+
+    if (isLastQ && lvl.exercises) {
+      // Show Next button → result screen with scoring
+      const exLabel = ex?.label || 'Exercise';
+      const onNext = nextEx ? advance : levelComplete;
+      const nextBtn = document.createElement('button');
+      nextBtn.textContent = 'Next ➜';
+      nextBtn.style.cssText = `display:block;margin:16px auto 0;background:#FFC857;border:4px solid #B5780C;border-radius:18px;padding:14px 36px;font-size:22px;font-weight:bold;color:#6b4a14;cursor:pointer;box-shadow:0 4px 0 #B5780C;font-family:inherit;`;
+      nextBtn.onclick = () => finishExercise(exLabel, total, onNext);
+      document.getElementById('qcontainer').appendChild(nextBtn);
+    } else {
+      setTimeout(advance, 1600);
+    }
+  } else {
+    playWrong();
+    if (btnEl) {
+      btnEl.classList.add('wrong');
+      setTimeout(() => btnEl.classList.remove('wrong'), 400);
+    }
+    fb.textContent = 'Almost! Try again 🌱';
+    fb.className = 'feedback try';
+  }
+}
+
+function advance() {
+  currentIdx++;
+  const data = LEVELS[currentLevel].data;
+  if (currentIdx >= data.length) {
+    levelComplete();
+  } else {
+    renderQuestion();
+  }
+}
+
+function levelComplete() {
+  if (!completed.includes(currentLevel)) {
+    completed.push(currentLevel);
+    localStorage.setItem('wv_unit1_completed', JSON.stringify(completed));
+  }
+  if (completed.length >= LEVELS.length) {
+    document.getElementById('view-level').classList.remove('active');
+    document.getElementById('view-chapterend').classList.add('active');
+  } else if (currentLevel + 1 < LEVELS.length) {
+    startLevel(currentLevel + 1);
+  } else {
+    showMap();
+  }
+}
+
+/* =========================================================
+   SCORING
+   ========================================================= */
+let exerciseScores = [];
+let wrongCount = 0;
+
+function showResultScreen(label, correct, total, onNext) {
+  document.getElementById('view-level').classList.remove('active');
+  document.getElementById('view-result').classList.add('active');
+
+  // Score on trophy
+  document.getElementById('trophyScore').textContent = `${correct}/${total}`;
+
+  // Score breakdown box
+  const cumCorrect = exerciseScores.reduce((s, e) => s + e.correct, 0);
+  const cumTotal   = exerciseScores.reduce((s, e) => s + e.total,   0);
+  const rows = exerciseScores.map(e =>
+    `<div class="rscore-line">${e.label}: <strong>${e.correct} / ${e.total}</strong></div>`
+  ).join('');
+  document.getElementById('resultScoreBox').innerHTML =
+    rows + `<div class="rscore-total">Total: ${cumCorrect} / ${cumTotal}</div>`;
+
+  // Next button
+  document.getElementById('resultNextBtn').onclick = () => {
+    document.getElementById('view-result').classList.remove('active');
+    document.getElementById('view-level').classList.add('active');
+    onNext();
+  };
+}
+
+function finishExercise(label, total, onNext) {
+  const correct = total; // full marks — player always gets it right eventually
+  exerciseScores.push({ label, correct, total });
+  showResultScreen(label, correct, total, onNext);
+}
+
+/* =========================================================
+   AUDIO
+   ========================================================= */
+let audioCtx = null;
+let masterGain = null;
+let musicPlaying = true;
+let musicLoopTimer = null;
+let loopGeneration = 0; // increment on stop to cancel stale loops
+
+function getCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.connect(audioCtx.destination);
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+// --- Twinkle Twinkle melody (C major, gentle) ---
+const NOTE = { C4:261.63,D4:293.66,E4:329.63,F4:349.23,G4:392.00,A4:440.00,B4:493.88,
+               C5:523.25,D5:587.33,E5:659.25,G5:783.99 };
+const MELODY = [
+  ['C4',.38],['C4',.38],['G4',.38],['G4',.38],['A4',.38],['A4',.38],['G4',.76],
+  ['F4',.38],['F4',.38],['E4',.38],['E4',.38],['D4',.38],['D4',.38],['C4',.76],
+  ['G4',.38],['G4',.38],['F4',.38],['F4',.38],['E4',.38],['E4',.38],['D4',.76],
+  ['G4',.38],['G4',.38],['F4',.38],['F4',.38],['E4',.38],['E4',.38],['D4',.76],
+  ['C4',.38],['C4',.38],['G4',.38],['G4',.38],['A4',.38],['A4',.38],['G4',.76],
+  ['F4',.38],['F4',.38],['E4',.38],['E4',.38],['D4',.38],['D4',.38],['C4',.76],
+  [null,.5]
+];
+
+function playTone(freq, start, dur, vol=0.10, type='triangle') {
+  const ctx = getCtx();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(masterGain); // route through master gain so mute works instantly
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0, start);
+  gain.gain.linearRampToValueAtTime(vol, start + 0.03);
+  gain.gain.exponentialRampToValueAtTime(0.001, start + dur - 0.04);
+  osc.start(start); osc.stop(start + dur);
+}
+
+function scheduleMelody(gen) {
+  if (!musicPlaying || gen !== loopGeneration) return; // stale loop — bail out
+  const ctx = getCtx();
+  let t = ctx.currentTime + 0.05;
+  let total = 0;
+  MELODY.forEach(([note, dur]) => {
+    if (note) playTone(NOTE[note], t, dur * 0.85);
+    t += dur;
+    total += dur;
+  });
+  musicLoopTimer = setTimeout(() => scheduleMelody(gen), (total - 0.1) * 1000);
+}
+
+function toggleMusic() {
+  musicPlaying = !musicPlaying;
+  document.getElementById('musicBtn').textContent = musicPlaying ? '🎵' : '🔇';
+  if (musicPlaying) {
+    masterGain.gain.setValueAtTime(1, getCtx().currentTime);
+    loopGeneration++;
+    scheduleMelody(loopGeneration);
+  } else {
+    loopGeneration++; // invalidates any running loop
+    clearTimeout(musicLoopTimer);
+    masterGain.gain.setValueAtTime(0, getCtx().currentTime); // silence immediately
+  }
+}
+
+// Start music on first interaction
+let audioStarted = false;
+document.addEventListener('click', () => {
+  if (!audioStarted) {
+    audioStarted = true;
+    if (musicPlaying) { loopGeneration++; scheduleMelody(loopGeneration); }
+  }
+}, { once: true });
+
+// --- Praise sounds + speech ---
+const PRAISES = ['Great job! 🎉','Wonderful! ⭐','Amazing! 🌟','You got it! 🎊','Brilliant! 💫','Super! 🌈'];
+function randomPraise() { return PRAISES[Math.floor(Math.random() * PRAISES.length)]; }
+
+function playPraise() {
+  const ctx = getCtx();
+  const now = ctx.currentTime;
+  // Ascending chime: C E G C5
+  [[523.25,0],[659.25,0.12],[783.99,0.24],[1046.5,0.36]].forEach(([f,d]) => {
+    playTone(f, now+d, 0.45, 0.22, 'sine');
+  });
+  // Spoken praise
+  if ('speechSynthesis' in window) {
+    const words = ['Great job!','Wonderful!','You rock!','Brilliant!','Amazing!'];
+    const u = new SpeechSynthesisUtterance(words[Math.floor(Math.random()*words.length)]);
+    u.pitch = 1.4; u.rate = 0.95; u.volume = 1;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  }
+}
+
+function playWrong() {
+  const ctx = getCtx();
+  playTone(220, ctx.currentTime, 0.18, 0.08, 'sine');
+}
+
+/* =========================================================
+   INIT
+   ========================================================= */
+renderMap();
+</script>
+</body>
+</html>
