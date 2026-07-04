@@ -452,6 +452,61 @@
     background:transparent; outline:none; color:#3a2a00; padding:2px 6px;
   }
   .plural-input:disabled { color:#2e7d32; border-color:#43A047; }
+
+  /* ---------- days-of-week: drag to order ---------- */
+  .day-chip-bank {
+    display:flex; flex-wrap:wrap; gap:12px; justify-content:center;
+    padding:16px; background:rgba(255,255,255,0.9); border:3px solid #B5780C;
+    border-radius:20px; margin-bottom:16px; box-shadow:0 3px 0 #e7cda0;
+  }
+  .day-chip {
+    cursor:grab; background:#fff; border:3px solid #B5780C; border-radius:14px;
+    padding:14px 20px; font-size:20px; font-weight:bold; color:#5A4632;
+    box-shadow:0 3px 0 #e7cda0; user-select:none; touch-action:none;
+  }
+  .day-chip.dragging { opacity:0.35; }
+  .day-slots { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:8px; }
+  .day-slot {
+    width:112px; min-height:130px; border:3px dashed #B5780C; border-radius:16px;
+    background:rgba(255,255,255,0.75); display:flex; flex-direction:column;
+    align-items:center; padding:10px 6px; transition:background 0.15s, border-color 0.15s;
+  }
+  .day-slot-num { font-size:14px; font-weight:bold; color:#9b8568; margin-bottom:8px; }
+  .day-slot.drag-over { background:#FFF6E5; border-color:#FFC857; border-style:solid; }
+  .day-slot.slot-done { background:#e8f8d8; border-color:#6FAE4A; border-style:solid; }
+  .day-chip-placed {
+    background:#FFC857; border:2px solid #B5780C; border-radius:12px;
+    padding:10px 6px; font-size:16px; font-weight:bold; color:#6b4a14;
+    text-align:center; width:100%;
+  }
+
+  /* ---------- weekly spelling: jumble ---------- */
+  .jumble-slots { display:flex; gap:10px; justify-content:center; margin-bottom:22px; flex-wrap:wrap; }
+  .jumble-slot {
+    width:52px; height:58px; border:3px dashed #B5780C; border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:30px; font-weight:900; color:#3a2a00; background:rgba(255,255,255,0.7);
+  }
+  .jumble-slot.filled { border-style:solid; background:#FFC857; border-color:#B5780C; }
+  .jumble-tiles { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .jumble-tile {
+    width:56px; height:56px; border-radius:14px; background:#FFF6E5; border:3px solid #E0A23A;
+    display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:900;
+    color:#5A4632; cursor:pointer; box-shadow:0 4px 0 #c8882a; user-select:none;
+    transition:transform 0.1s;
+  }
+  .jumble-tile:active { transform:scale(0.92); }
+  .jumble-tile.used { opacity:0.25; pointer-events:none; box-shadow:none; }
+
+  /* ---------- weekly spelling: sound it out ---------- */
+  .phonetic-play-btn {
+    width:110px; height:110px; border-radius:50%; background:#FFC857;
+    border:5px solid #B5780C; font-size:52px; cursor:pointer; color:#6b4a14;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 6px 0 #B5780C; transition:transform 0.1s; user-select:none;
+  }
+  .phonetic-play-btn:active { transform:scale(0.94); box-shadow:0 3px 0 #B5780C; }
+  .phonetic-hint { font-size:16px; color:#9b8568; font-weight:bold; }
 </style>
 </head>
 <body>
@@ -504,7 +559,7 @@
   <!-- ================= CHAPTER END ================= -->
   <div class="view" id="view-chapterend">
     <div class="celebrate">
-      <img src="assets/transparent/frog.png" style="clip-path: inset(0 67% 0 0); transform: scale(2.6) translate(8px,6px);" alt="frog">
+      <div style="font-size:64px;">🐸</div>
       <h2>🎉 Lily Pad Pond is restored! 🎉</h2>
       <div class="stars">⭐⭐⭐</div>
       <p>Fennick and the frog hopped all the way across the pond. Great job, Penny!</p>
@@ -749,8 +804,63 @@ const level2Data = [
   { type:'countchoice', count:1,  emoji:'🥛',                       singular:'glass',     plural:'glasses'    },
 ];
 
-// ---------- LEVEL 3: Telling Time on an Analog Clock ----------
-const level3Data = [
+// ---------- LEVEL 4: Days of the Week ----------
+const level4Data = [
+  // Exercise 1 — drag each day into the correct order
+  { type: 'dayorder',
+    days: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
+  },
+  // Exercise 2 — fill in the missing letters
+  { type: 'dayblank',
+    words: [
+      { word:'Monday',    prefix:'M',  blank:'on', suffix:'day'   },
+      { word:'Tuesday',   prefix:'Tu', blank:'es', suffix:'day'   },
+      { word:'Wednesday', prefix:'We', blank:'dn', suffix:'esday' },
+      { word:'Thursday',  prefix:'Th', blank:'ur', suffix:'sday'  },
+      { word:'Friday',    prefix:'F',  blank:'ri', suffix:'day'   },
+      { word:'Saturday',  prefix:'Sa', blank:'tu', suffix:'rday'  },
+      { word:'Sunday',    prefix:'S',  blank:'un', suffix:'day'   },
+    ]
+  }
+];
+
+// ---------- LEVEL 5: Weekly Spelling — tricky words ----------
+const level5Data = [
+  // Exercise 1 — unscramble the jumbled letters
+  { type: 'jumble',
+    words: [
+      { word:'come',  scrambled:'MECO'  },
+      { word:'find',  scrambled:'DNIF'  },
+      { word:'my',    scrambled:'YM'    },
+      { word:'there', scrambled:'REETH' },
+      { word:'took',  scrambled:'OKTO'  },
+    ]
+  },
+  // Exercise 2 — pick the correctly-spelled word for the sound
+  { type: 'phonetic',
+    words: [
+      { phonetic:'KUM',   correct:'come',  wrong:['kum','cume']    },
+      { phonetic:'FYND',  correct:'find',  wrong:['fynd','finde']  },
+      { phonetic:'MI',    correct:'my',    wrong:['mi','mye']      },
+      { phonetic:'THAIR', correct:'there', wrong:['thair','thear'] },
+      { phonetic:'TUK',   correct:'took',  wrong:['tuk','tooke']   },
+    ]
+  },
+  // Exercise 3 — fill in the blank sentences
+  { type: 'fillinblank',
+    bank: ['come','find','my','there','took'],
+    questions: [
+      { before:'Please',           after:'here right now.', answer:'come'  },
+      { before:'Can you',          after:'my lost toy?',    answer:'find'  },
+      { before:'This is',          after:'favourite book.', answer:'my'    },
+      { before:'The cat sat over', after:'.',                answer:'there' },
+      { before:'She',              after:'the bus to school.', answer:'took'  },
+    ]
+  }
+];
+
+// ---------- LEVEL 6: Telling Time on an Analog Clock ----------
+const levelClockData = [
   // Exercise 1: On the hour (startIdx 0)
   { type:'clockread', hour:3,  minute:0,  correct:'3:00',  options:['3:00','9:00','6:00','4:00'] },
   { type:'clockread', hour:6,  minute:0,  correct:'6:00',  options:['6:00','3:00','12:00','8:00'] },
@@ -813,7 +923,20 @@ const LEVELS = [
       { label:'Exercise 4 — How Many?',     sub:'Pick the right word for how many there are', startIdx:13 },
     ]
   },
-  { title:"Telling Time", sub:"Read the hands on an analog clock!", data:level3Data, prompt:"What time does the clock show?",
+  { title:"Days of the Week", sub:"Learn the days of the week in order!", data:level4Data, prompt:"Let's learn the days of the week!",
+    exercises:[
+      { label:'Exercise 1 — Put Them in Order', sub:'Drag each day into the correct order',     startIdx:0 },
+      { label:'Exercise 2 — Missing Letters',   sub:'Fill in the missing letters in each day',  startIdx:1 },
+    ]
+  },
+  { title:"Weekly Spelling", sub:"Practise this week's tricky words!", data:level5Data, prompt:"Let's practise this week's spelling words!",
+    exercises:[
+      { label:'Exercise 1 — Unscramble It!', sub:'Put the jumbled letters in the right order',       startIdx:0 },
+      { label:'Exercise 2 — Sound It Out',   sub:'Pick the correctly spelled word',                  startIdx:1 },
+      { label:'Exercise 3 — Fill the Blank', sub:'Type the correct word to complete each sentence',  startIdx:2 },
+    ]
+  },
+  { title:"Telling Time", sub:"Read the hands on an analog clock!", data:levelClockData, prompt:"What time does the clock show?",
     exercises:[
       { label:'Exercise 1 — On the Hour',      sub:'Read the time when the minute hand points to 12', startIdx:0  },
       { label:'Exercise 2 — Quarter Hours',    sub:'Read times at :15, :30, and :45',                 startIdx:6  },
@@ -829,7 +952,7 @@ const LEVELS = [
    ========================================================= */
 let currentLevel = 0;
 let currentIdx = 0;
-let completed = JSON.parse(localStorage.getItem('wv_unit1_completed') || '[]');
+let completed = (() => { try { return JSON.parse(localStorage.getItem('wv_unit1_completed') || '[]'); } catch(e) { return []; } })();
 
 /* =========================================================
    MAP SCREEN
@@ -971,7 +1094,7 @@ function renderQuestion() {
   document.getElementById('levelLabel').textContent = `Level ${currentLevel+1} — ${lvl.title}${exPart}`;
 
   // update prompt per question type
-  const promptOverrides = { drag:'Sort the nouns into four groups!', tapnounall:'Tap the noun in each sentence!', wordsearch:'Find the fruit words hidden in the grid!', fillinblank:'Fill in the blank with the correct word!', wordcloud:'Choose a favourite colour and colour all the proper nouns!', gumball:'Pick a colour from the key, then paint each candy!', tutorial:'Read the rules, then click "Got it!" to start!', pluraltable:'Type the plural form of each word!', pluralchoice:'Pick the correct plural!', countchoice:'Pick the right word!', clockread:'What time does the clock show?' };
+  const promptOverrides = { drag:'Sort the nouns into four groups!', tapnounall:'Tap the noun in each sentence!', wordsearch:'Find the fruit words hidden in the grid!', fillinblank:'Fill in the blank with the correct word!', wordcloud:'Choose a favourite colour and colour all the proper nouns!', gumball:'Pick a colour from the key, then paint each candy!', tutorial:'Read the rules, then click "Got it!" to start!', pluraltable:'Type the plural form of each word!', pluralchoice:'Pick the correct plural!', countchoice:'Pick the right word!', clockread:'What time does the clock show?', dayorder:'Drag each day into the right order!', dayblank:'Fill in the missing letters!', jumble:'Unscramble the letters to spell the word!', phonetic:'Pick the word that matches the sound!' };
   document.getElementById('prompt').textContent = promptOverrides[q.type] || lvl.prompt;
 
   if (q.type === 'drag') renderDrag(q, c);
@@ -989,6 +1112,10 @@ function renderQuestion() {
   else if (q.type === 'sort') renderSort(q, c);
   else if (q.type === 'capital') renderCapital(q, c);
   else if (q.type === 'clockread') renderClockRead(q, c);
+  else if (q.type === 'dayorder') renderDayOrder(q, c);
+  else if (q.type === 'dayblank') renderDayBlank(q, c);
+  else if (q.type === 'jumble') renderJumble(q, c);
+  else if (q.type === 'phonetic') renderPhonetic(q, c);
 }
 
 function artHTML(q) {
@@ -1456,10 +1583,11 @@ function renderFillinBlank(q, c) {
         if (solvedCount === q.questions.length) {
           fb.textContent = '🎉 All done! You\'re a star!';
           fb.className = 'feedback good';
+          const { ex } = getExerciseBounds();
           const nextBtn = document.createElement('button');
           nextBtn.textContent = 'Next ➜';
           nextBtn.style.cssText = `display:block;margin:16px auto 0;background:#FFC857;border:4px solid #B5780C;border-radius:18px;padding:14px 36px;font-size:22px;font-weight:bold;color:#6b4a14;cursor:pointer;box-shadow:0 4px 0 #B5780C;font-family:inherit;`;
-          nextBtn.onclick = () => finishExercise('Exercise 4 — Fill the Blank', q.questions.length, advance);
+          nextBtn.onclick = () => finishExercise(ex?.label || 'Exercise', q.questions.length, advance);
           c.appendChild(nextBtn);
         } else {
           fb.textContent = randomPraise();
@@ -2135,6 +2263,356 @@ function renderClockRead(q, c) {
   });
 }
 
+/* ---- Type dayorder: drag the days into the correct order ---- */
+function renderDayOrder(q, c) {
+  wrongCount = 0;
+  const placed = {}; // day → slot index
+  let dragDay = null;
+  const bankOrder = [...q.days].sort(() => Math.random() - 0.5);
+  const ordinals = ['1st','2nd','3rd','4th','5th','6th','7th'];
+
+  function rebuild() {
+    c.innerHTML = '';
+
+    const bank = document.createElement('div');
+    bank.className = 'day-chip-bank';
+    const remaining = bankOrder.filter(d => placed[d] === undefined);
+    if (remaining.length === 0) {
+      bank.innerHTML = '<div class="noun-bank-empty">All in order! 🎉</div>';
+    } else {
+      remaining.forEach(d => {
+        const chip = document.createElement('div');
+        chip.className = 'day-chip';
+        chip.draggable = true;
+        chip.textContent = d;
+        chip.addEventListener('dragstart', e => {
+          dragDay = d;
+          setTimeout(() => chip.classList.add('dragging'), 0);
+          e.dataTransfer.effectAllowed = 'move';
+        });
+        chip.addEventListener('dragend', () => {
+          chip.classList.remove('dragging');
+          dragDay = null;
+        });
+        bank.appendChild(chip);
+      });
+    }
+    c.appendChild(bank);
+
+    const slotsWrap = document.createElement('div');
+    slotsWrap.className = 'day-slots';
+
+    q.days.forEach((correctDay, i) => {
+      const placedDay = Object.keys(placed).find(d => placed[d] === i);
+      const slot = document.createElement('div');
+      slot.className = 'day-slot' + (placedDay ? ' slot-done' : '');
+      slot.innerHTML = `<div class="day-slot-num">${ordinals[i]}</div>` +
+        (placedDay ? `<div class="day-chip-placed">${placedDay}</div>` : '');
+
+      slot.addEventListener('dragover', e => {
+        e.preventDefault();
+        if (!placedDay) slot.classList.add('drag-over');
+      });
+      slot.addEventListener('dragleave', e => {
+        if (!slot.contains(e.relatedTarget)) slot.classList.remove('drag-over');
+      });
+      slot.addEventListener('drop', e => {
+        e.preventDefault();
+        slot.classList.remove('drag-over');
+        if (!dragDay || placedDay) return;
+
+        if (dragDay === correctDay) {
+          placed[dragDay] = i;
+          dragDay = null;
+          rebuild();
+          if (Object.keys(placed).length === q.days.length) {
+            playPraise();
+            const fb = document.getElementById('feedback');
+            fb.textContent = 'Amazing! All 7 days in order! 🎉';
+            fb.className = 'feedback good';
+            const { ex, nextEx } = getExerciseBounds();
+            const onNext = nextEx ? advance : levelComplete;
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = 'Next ➜';
+            nextBtn.style.cssText = `display:block;margin:16px auto 0;background:#FFC857;border:4px solid #B5780C;border-radius:18px;padding:14px 36px;font-size:22px;font-weight:bold;color:#6b4a14;cursor:pointer;box-shadow:0 4px 0 #B5780C;font-family:inherit;`;
+            nextBtn.onclick = () => finishExercise(ex?.label || 'Exercise 1', q.days.length, onNext);
+            document.getElementById('qcontainer').appendChild(nextBtn);
+          }
+        } else {
+          wrongCount++;
+          playWrong();
+          const fb = document.getElementById('feedback');
+          fb.textContent = 'Not quite that day — try another spot! 🌱';
+          fb.className = 'feedback try';
+          slot.style.animation = 'wobble 0.4s';
+          setTimeout(() => { slot.style.animation = ''; }, 400);
+          dragDay = null;
+        }
+      });
+
+      slotsWrap.appendChild(slot);
+    });
+
+    c.appendChild(slotsWrap);
+  }
+
+  rebuild();
+}
+
+/* ---- Type dayblank: fill in the missing letters of each day ---- */
+function renderDayBlank(q, c) {
+  let solvedCount = 0;
+  const table = document.createElement('div');
+  table.className = 'plural-table';
+
+  q.words.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'plural-row';
+    row.style.justifyContent = 'center';
+
+    const wordWrap = document.createElement('div');
+    wordWrap.style.cssText = 'display:flex;align-items:center;gap:2px;font-size:28px;font-weight:bold;color:#3a2a00;';
+
+    const prefixSpan = document.createElement('span');
+    prefixSpan.textContent = item.prefix;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'plural-input';
+    input.style.cssText = `width:${item.blank.length * 34 + 20}px;text-align:center;`;
+    input.maxLength = item.blank.length;
+    input.placeholder = '?'.repeat(item.blank.length);
+    input.autocomplete = 'off';
+    input.autocorrect = 'off';
+    input.autocapitalize = 'none';
+    input.spellcheck = false;
+
+    const suffixSpan = document.createElement('span');
+    suffixSpan.textContent = item.suffix;
+
+    wordWrap.appendChild(prefixSpan);
+    wordWrap.appendChild(input);
+    wordWrap.appendChild(suffixSpan);
+    row.appendChild(wordWrap);
+    table.appendChild(row);
+
+    input.addEventListener('input', () => {
+      if (row.classList.contains('correct')) return;
+      if (input.value.trim().toLowerCase() === item.blank.toLowerCase()) {
+        row.classList.add('correct');
+        input.disabled = true;
+        input.value = item.blank;
+        playPraise();
+        solvedCount++;
+        const fb = document.getElementById('feedback');
+        if (solvedCount === q.words.length) {
+          fb.textContent = '🎉 Amazing! You know all the days!';
+          fb.className = 'feedback good';
+          const { ex, nextEx } = getExerciseBounds();
+          const onNext = nextEx ? advance : levelComplete;
+          const nextBtn = document.createElement('button');
+          nextBtn.textContent = 'Next ➜';
+          nextBtn.style.cssText = `display:block;margin:16px auto 0;background:#FFC857;border:4px solid #B5780C;border-radius:18px;padding:14px 36px;font-size:22px;font-weight:bold;color:#6b4a14;cursor:pointer;box-shadow:0 4px 0 #B5780C;font-family:inherit;`;
+          nextBtn.onclick = () => finishExercise(ex?.label || 'Exercise 2', q.words.length, onNext);
+          c.appendChild(nextBtn);
+        } else {
+          fb.textContent = randomPraise();
+          fb.className = 'feedback good';
+          setTimeout(() => { fb.textContent = ''; fb.className = 'feedback'; }, 1500);
+        }
+      }
+    });
+  });
+
+  c.appendChild(table);
+}
+
+/* ---- Type jumble: unscramble the letters ---- */
+function renderJumble(q, c) {
+  wrongCount = 0;
+  let qi = 0;
+
+  function showQ() {
+    c.innerHTML = '';
+    const item = q.words[qi];
+    const total = q.words.length;
+
+    const prog = document.createElement('div');
+    prog.style.cssText = 'display:flex;gap:6px;justify-content:center;margin-bottom:14px;';
+    for (let i = 0; i < total; i++) {
+      const dot = document.createElement('div');
+      dot.style.cssText = `width:28px;height:10px;border-radius:6px;background:${i < qi ? '#6FAE4A' : (i === qi ? '#FFC857' : '#e7cda0')};`;
+      prog.appendChild(dot);
+    }
+    c.appendChild(prog);
+
+    const target = item.word.toUpperCase();
+    const letters = item.scrambled.split('');
+    const placedIdx = [];
+
+    const slotsWrap = document.createElement('div');
+    slotsWrap.className = 'jumble-slots';
+    for (let i = 0; i < target.length; i++) {
+      const slot = document.createElement('div');
+      slot.className = 'jumble-slot';
+      slotsWrap.appendChild(slot);
+    }
+    c.appendChild(slotsWrap);
+
+    const tilesWrap = document.createElement('div');
+    tilesWrap.className = 'jumble-tiles';
+
+    letters.forEach((ltr, li) => {
+      const tile = document.createElement('div');
+      tile.className = 'jumble-tile';
+      tile.textContent = ltr.toUpperCase();
+      tile.onclick = () => {
+        const nextIdx = placedIdx.length;
+        if (ltr.toUpperCase() === target[nextIdx]) {
+          tile.classList.add('used');
+          placedIdx.push(li);
+          const slotEl = slotsWrap.children[nextIdx];
+          slotEl.textContent = ltr.toUpperCase();
+          slotEl.classList.add('filled');
+
+          if (placedIdx.length === target.length) {
+            playPraise();
+            const fb = document.getElementById('feedback');
+            if (qi + 1 >= total) {
+              fb.textContent = 'Amazing! You unscrambled them all! 🎉';
+              fb.className = 'feedback good';
+              const { ex, nextEx } = getExerciseBounds();
+              const onNext = nextEx ? advance : levelComplete;
+              const nextBtn = document.createElement('button');
+              nextBtn.textContent = 'Next ➜';
+              nextBtn.style.cssText = `display:block;margin:16px auto 0;background:#FFC857;border:4px solid #B5780C;border-radius:18px;padding:14px 36px;font-size:22px;font-weight:bold;color:#6b4a14;cursor:pointer;box-shadow:0 4px 0 #B5780C;font-family:inherit;`;
+              nextBtn.onclick = () => finishExercise(ex?.label || 'Exercise 1', total, onNext);
+              c.appendChild(nextBtn);
+            } else {
+              fb.textContent = randomPraise();
+              fb.className = 'feedback good';
+              setTimeout(() => {
+                qi++;
+                document.getElementById('feedback').textContent = '';
+                document.getElementById('feedback').className = 'feedback';
+                showQ();
+              }, 1200);
+            }
+          }
+        } else {
+          wrongCount++;
+          playWrong();
+          tile.style.animation = 'wobble 0.4s';
+          setTimeout(() => { tile.style.animation = ''; }, 400);
+          document.getElementById('feedback').textContent = 'Try a different letter! 🌱';
+          document.getElementById('feedback').className = 'feedback try';
+        }
+      };
+      tilesWrap.appendChild(tile);
+    });
+
+    c.appendChild(tilesWrap);
+  }
+
+  showQ();
+}
+
+/* ---- Type phonetic: pick the correctly-spelled word ---- */
+function renderPhonetic(q, c) {
+  let qi = 0;
+
+  function showQ() {
+    c.innerHTML = '';
+    const item = q.words[qi];
+    const total = q.words.length;
+
+    const prog = document.createElement('div');
+    prog.style.cssText = 'display:flex;gap:6px;justify-content:center;margin-bottom:14px;';
+    for (let i = 0; i < total; i++) {
+      const dot = document.createElement('div');
+      dot.style.cssText = `width:28px;height:10px;border-radius:6px;background:${i < qi ? '#6FAE4A' : (i === qi ? '#FFC857' : '#e7cda0')};`;
+      prog.appendChild(dot);
+    }
+    c.appendChild(prog);
+
+    const hasTTS = speakWordSupported();
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.cssText = 'min-height:unset;gap:10px;padding:24px;';
+    if (hasTTS) {
+      card.innerHTML = `
+        <div style="font-size:19px;color:#9b8568;font-weight:bold;">Listen to the word...</div>
+        <div class="phonetic-play-btn" id="phoneticPlayBtn">🔊</div>
+        <div class="phonetic-hint">Tap to hear it again</div>
+      `;
+    } else {
+      // Fallback for browsers without speech synthesis support
+      card.innerHTML = `
+        <div style="font-size:19px;color:#9b8568;font-weight:bold;">It sounds like...</div>
+        <div class="word" style="font-size:44px;letter-spacing:2px;">${item.phonetic}</div>
+      `;
+    }
+    c.appendChild(card);
+
+    if (hasTTS) {
+      document.getElementById('phoneticPlayBtn').onclick = () => speakWord(item.correct);
+      speakWord(item.correct);
+    }
+
+    const options = [item.correct, ...item.wrong].sort(() => Math.random() - 0.5);
+    const row = document.createElement('div');
+    row.className = 'choice-row';
+    row.style.marginTop = '10px';
+
+    options.forEach(opt => {
+      const btn = document.createElement('div');
+      btn.className = 'choice';
+      btn.style.cssText = 'font-size:26px;font-weight:bold;min-height:80px;';
+      btn.textContent = opt;
+      btn.onclick = () => {
+        const correct = (opt === item.correct);
+        if (correct) {
+          row.querySelectorAll('.choice').forEach(el => el.onclick = null);
+          btn.classList.add('correct');
+          playPraise();
+          const fb = document.getElementById('feedback');
+          if (qi + 1 >= total) {
+            fb.textContent = randomPraise();
+            fb.className = 'feedback good';
+            const { ex, nextEx } = getExerciseBounds();
+            const onNext = nextEx ? advance : levelComplete;
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = 'Next ➜';
+            nextBtn.style.cssText = `display:block;margin:16px auto 0;background:#FFC857;border:4px solid #B5780C;border-radius:18px;padding:14px 36px;font-size:22px;font-weight:bold;color:#6b4a14;cursor:pointer;box-shadow:0 4px 0 #B5780C;font-family:inherit;`;
+            nextBtn.onclick = () => finishExercise(ex?.label || 'Exercise 2', total, onNext);
+            c.appendChild(nextBtn);
+          } else {
+            fb.textContent = randomPraise();
+            fb.className = 'feedback good';
+            setTimeout(() => {
+              qi++;
+              document.getElementById('feedback').textContent = '';
+              document.getElementById('feedback').className = 'feedback';
+              showQ();
+            }, 1200);
+          }
+        } else {
+          playWrong();
+          btn.classList.add('wrong');
+          setTimeout(() => btn.classList.remove('wrong'), 400);
+          document.getElementById('feedback').textContent = 'Almost! Try again 🌱';
+          document.getElementById('feedback').className = 'feedback try';
+        }
+      };
+      row.appendChild(btn);
+    });
+
+    c.appendChild(row);
+  }
+
+  showQ();
+}
+
 /* ---- shared result handler ---- */
 function handleResult(correct, btnEl, fact, onCorrect) {
   const fb = document.getElementById('feedback');
@@ -2186,7 +2664,7 @@ function advance() {
 function levelComplete() {
   if (!completed.includes(currentLevel)) {
     completed.push(currentLevel);
-    localStorage.setItem('wv_unit1_completed', JSON.stringify(completed));
+    try { localStorage.setItem('wv_unit1_completed', JSON.stringify(completed)); } catch(e) {}
   }
   if (completed.length >= LEVELS.length) {
     document.getElementById('view-level').classList.remove('active');
@@ -2335,6 +2813,18 @@ function playPraise() {
     speechSynthesis.cancel();
     speechSynthesis.speak(u);
   }
+}
+
+function speakWordSupported() {
+  return 'speechSynthesis' in window;
+}
+
+function speakWord(word) {
+  if (!speakWordSupported()) return;
+  const u = new SpeechSynthesisUtterance(word);
+  u.pitch = 1.1; u.rate = 0.75; u.volume = 1;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
 }
 
 function playWrong() {
