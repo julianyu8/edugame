@@ -507,6 +507,13 @@
   }
   .phonetic-play-btn:active { transform:scale(0.94); box-shadow:0 3px 0 #B5780C; }
   .phonetic-hint { font-size:16px; color:#9b8568; font-weight:bold; }
+  .jumble-play-btn {
+    width:78px; height:78px; border-radius:50%; background:#FFC857;
+    border:5px solid #B5780C; font-size:38px; cursor:pointer; color:#6b4a14;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 5px 0 #B5780C; transition:transform 0.1s; user-select:none;
+  }
+  .jumble-play-btn:active { transform:scale(0.94); box-shadow:0 2px 0 #B5780C; }
 </style>
 </head>
 <body>
@@ -898,8 +905,247 @@ const levelClockData = [
   { type:'clockread', hour:6,  minute:17, correct:'6:17',  options:['6:17','6:15','6:19','6:13'] },
 ];
 
+/* =========================================================
+   WORD BANKS — randomised content for Levels 1-3
+   Entries that need a matching picture stay fixed (we only have
+   art for the nouns already in the game); emoji/text-only entries
+   are pooled here and sampled fresh every time a level is (re)started,
+   so each playthrough shows a different mix of words. Every builder
+   below returns exactly as many items as the original static data,
+   so the exercise boundaries (startIdx) in LEVELS keep working.
+   ========================================================= */
+
+function sampleUnique(pool, n) {
+  const arr = [...pool];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.slice(0, n);
+}
+
+// ---- Level 1 Ex4 — Fill the Blank (pure text, fully randomised) ----
+const FILLBLANK_BANK = [
+  { before:'Miss Lee is my',              after:'.',                answer:'teacher'     },
+  { before:'My',                          after:'is near my home.', answer:'school'      },
+  { before:'This is a box of',            after:'.',                answer:'crayons'     },
+  { before:'Peter keeps a pet',           after:'.',                answer:'dog'         },
+  { before:'My',                          after:'loves me.',        answer:'grandmother' },
+  { before:'I drink',                     after:'from a cup.',      answer:'water'       },
+  { before:'I read a',                    after:'every night.',     answer:'book'        },
+  { before:'Amy is my best',              after:'.',                answer:'friend'      },
+  { before:'We planted flowers in the',   after:'.',                answer:'garden'      },
+  { before:'He rides his',                after:'to school.',       answer:'bicycle'     },
+  { before:'Mum cooks dinner in the',     after:'.',                answer:'kitchen'     },
+  { before:'I bring my',                  after:'when it rains.',   answer:'umbrella'    },
+  { before:'I carry my books in a',       after:'.',                answer:'backpack'    },
+  { before:'Today is my sister’s',   after:'.',                answer:'birthday'    },
+];
+
+function buildFillinblank(count) {
+  const picked = sampleUnique(FILLBLANK_BANK, count);
+  return {
+    type:'fillinblank',
+    bank: picked.map(p => p.answer).sort(() => Math.random() - 0.5),
+    questions: [...picked].sort(() => Math.random() - 0.5),
+  };
+}
+
+function buildLevel0Data() {
+  return [
+    level0Data[0], // Sort It! — static (each noun needs a matching picture)
+    level0Data[1], // Find the Noun — static (each sentence needs a matching picture)
+    level0Data[2], // Word Search — static (hand-placed letter grid + pictures)
+    buildFillinblank(6),
+  ];
+}
+
+// ---- Level 2 Ex1 — Common or Proper: fixed image anchors + emoji pool ----
+const CLASSIFY_IMG_FIXED = [
+  { type:'classify', word:"park",    proper:false, img:"assets/park.png",      fact:"Parks are great for kites and picnics!" },
+  { type:'classify', word:"Mr Wong", proper:true,  img:"assets/Mr%20Wong.png", fact:"Mr Wong is a person's special name — capital letters for both words!" },
+];
+const CLASSIFY_COMMON_POOL = [
+  { word:"girl",         emoji:"👧" },
+  { word:"boy",          emoji:"👦" },
+  { word:"computer",     emoji:"💻" },
+  { word:"water bottle", emoji:"🧴" },
+  { word:"kite",         emoji:"🪁" },
+  { word:"dog",          emoji:"🐶" },
+  { word:"cat",          emoji:"🐱" },
+  { word:"ball",         emoji:"⚽" },
+  { word:"umbrella",     emoji:"☂️" },
+  { word:"bicycle",      emoji:"🚲" },
+  { word:"balloon",      emoji:"🎈" },
+  { word:"guitar",       emoji:"🎸" },
+];
+const CLASSIFY_PROPER_POOL = [
+  { word:"Changi Airport", emoji:"✈️",  fact:"Changi Airport is a special place in Singapore — it needs capital letters!" },
+  { word:"Pastor Tay",     emoji:"🧑‍💼", fact:"Pastor Tay's name is special — both words start with a capital letter!" },
+  { word:"Mrs Ismail",     emoji:"👩‍🏫", fact:"Mrs Ismail's name is special too!" },
+  { word:"Sentosa",        emoji:"🏝️", fact:"Sentosa is a special island in Singapore — it needs a capital letter!" },
+  { word:"Monday",         emoji:"📅",  fact:"Days of the week always start with a capital letter!" },
+  { word:"Ethan",          emoji:"👦",  fact:"A person's name always starts with a capital letter!" },
+  { word:"Sofia",          emoji:"👧",  fact:"A person's name always starts with a capital letter!" },
+];
+
+function buildClassifyData() {
+  const commons = sampleUnique(CLASSIFY_COMMON_POOL, 5).map(w => ({ type:'classify', word:w.word, proper:false, emoji:w.emoji }));
+  const propers = sampleUnique(CLASSIFY_PROPER_POOL, 3).map(w => ({ type:'classify', word:w.word, proper:true, emoji:w.emoji, fact:w.fact }));
+  return [...CLASSIFY_IMG_FIXED, ...commons, ...propers].sort(() => Math.random() - 0.5);
+}
+
+// ---- Level 2 Ex2 — Colour the Nouns (word cloud, pure text) ----
+const WORDCLOUD_COMMON_POOL = ['school','brother','sister','window','playground','apple','lion','computer','handphone','television','chair','banana','bicycle','garden','kitchen','backpack','camera','guitar','balloon','candle'];
+const WORDCLOUD_PROPER_POOL = ['Potong Pasir','Monday','Penelope','Noah','Bishan','Yishun','Sentosa','Ethan','Sofia','Tuesday','Friday','December','Uncle Ben','Aunty May'];
+
+function buildWordcloud() {
+  const commons = sampleUnique(WORDCLOUD_COMMON_POOL, 9).map(word => ({ word, proper:false }));
+  const propers = sampleUnique(WORDCLOUD_PROPER_POOL, 4).map(word => ({ word, proper:true }));
+  return { type:'wordcloud', words: [...commons, ...propers].sort(() => Math.random() - 0.5) };
+}
+
+// ---- Level 2 Ex3 — Paint the Candies (gumball, pure text) ----
+const GUMBALL_COMMON_POOL = ['bus','book','teacher','dog','month','girl','day','cat','pencil','sandwich','umbrella','spoon','mirror','candle'];
+const GUMBALL_PROPER_POOL = ['September','Mr. Smith','Monday','Spot','Lily','Ethan','Sofia','Friday','December','Uncle Ben'];
+
+function buildGumball() {
+  const commons = sampleUnique(GUMBALL_COMMON_POOL, 7).map(word => ({ word, proper:false }));
+  const propers = sampleUnique(GUMBALL_PROPER_POOL, 5).map(word => ({ word, proper:true }));
+  return {
+    type:'gumball',
+    colorKey:[
+      { label:'Common noun', color:'#FF8A80' },
+      { label:'Proper noun', color:'#80B3FF' },
+    ],
+    words: [...commons, ...propers].sort(() => Math.random() - 0.5),
+  };
+}
+
+function buildLevel1Data() {
+  return [
+    ...buildClassifyData(),
+    buildWordcloud(),
+    buildGumball(),
+  ];
+}
+
+// ---- Level 3 Ex1 — Add -s: fixed image anchors + emoji pool ----
+const PLURAL_S_IMG_FIXED = [
+  { singular:'apple',     plural:'apples',     img:'assets/exercise3/apple.png' },
+  { singular:'classroom', plural:'classrooms', img:'assets/classroom.png' },
+  { singular:'teacher',   plural:'teachers',   img:'assets/teacher.png' },
+];
+const PLURAL_S_EMOJI_POOL = [
+  { singular:'boy',     plural:'boys',     emoji:'👦' },
+  { singular:'flower',  plural:'flowers',  emoji:'🌸' },
+  { singular:'monkey',  plural:'monkeys',  emoji:'🐒' },
+  { singular:'girl',    plural:'girls',    emoji:'👧' },
+  { singular:'bird',    plural:'birds',    emoji:'🐦' },
+  { singular:'star',    plural:'stars',    emoji:'⭐' },
+  { singular:'balloon', plural:'balloons', emoji:'🎈' },
+  { singular:'kite',    plural:'kites',    emoji:'🪁' },
+  { singular:'pencil',  plural:'pencils',  emoji:'✏️' },
+  { singular:'sock',    plural:'socks',    emoji:'🧦' },
+];
+
+function buildPluralS() {
+  const emojis = sampleUnique(PLURAL_S_EMOJI_POOL, 3);
+  return { type:'pluraltable', rule:'✏️  Add  -s  to make the plural', words: [...PLURAL_S_IMG_FIXED, ...emojis].sort(() => Math.random() - 0.5) };
+}
+
+// ---- Level 3 Ex2 — Add -es (all emoji, fully randomised) ----
+const PLURAL_ES_EMOJI_POOL = [
+  { singular:'bus',      plural:'buses',      emoji:'🚌' },
+  { singular:'class',    plural:'classes',    emoji:'🎒' },
+  { singular:'glass',    plural:'glasses',    emoji:'🥛' },
+  { singular:'kiss',     plural:'kisses',     emoji:'💋' },
+  { singular:'dish',     plural:'dishes',     emoji:'🍽️' },
+  { singular:'match',    plural:'matches',    emoji:'🔥' },
+  { singular:'torch',    plural:'torches',    emoji:'🔦' },
+  { singular:'watch',    plural:'watches',    emoji:'⌚' },
+  { singular:'box',      plural:'boxes',      emoji:'📦' },
+  { singular:'fox',      plural:'foxes',      emoji:'🦊' },
+  { singular:'brush',    plural:'brushes',    emoji:'🖌️' },
+  { singular:'wish',     plural:'wishes',     emoji:'🌠' },
+  { singular:'peach',    plural:'peaches',    emoji:'🍑' },
+  { singular:'dress',    plural:'dresses',    emoji:'👗' },
+  { singular:'sandwich', plural:'sandwiches', emoji:'🥪' },
+];
+
+function buildPluralEs() {
+  return { type:'pluraltable', rule:'✏️  Add  -es  to make the plural', words: sampleUnique(PLURAL_ES_EMOJI_POOL, 10) };
+}
+
+// ---- Level 3 Ex3 — Pick the Plural: fixed image anchors + emoji pool ----
+const PLURALCHOICE_IMG_FIXED = [
+  { type:'pluralchoice', singular:'apple',     img:'assets/exercise3/apple.png', correct:'apples',     wrong:'applees'     },
+  { type:'pluralchoice', singular:'classroom', img:'assets/classroom.png',       correct:'classrooms', wrong:'classroomes' },
+  { type:'pluralchoice', singular:'teacher',   img:'assets/teacher.png',         correct:'teachers',   wrong:'teacheres'   },
+];
+const PLURALCHOICE_EMOJI_POOL = [
+  { singular:'bus',    emoji:'🚌', correct:'buses',   wrong:'buss'     },
+  { singular:'flower', emoji:'🌸', correct:'flowers', wrong:'floweres' },
+  { singular:'dish',   emoji:'🍽️', correct:'dishes',  wrong:'dishs'    },
+  { singular:'monkey', emoji:'🐒', correct:'monkeys', wrong:'monkeyes' },
+  { singular:'match',  emoji:'🔥', correct:'matches', wrong:'matchs'   },
+  { singular:'fox',    emoji:'🦊', correct:'foxes',   wrong:'foxs'     },
+  { singular:'watch',  emoji:'⌚', correct:'watches', wrong:'watchs'   },
+  { singular:'boy',    emoji:'👦', correct:'boys',    wrong:'boyes'    },
+  { singular:'box',    emoji:'📦', correct:'boxes',   wrong:'boxs'     },
+  { singular:'glass',  emoji:'🥛', correct:'glasses', wrong:'glasss'   },
+  { singular:'torch',  emoji:'🔦', correct:'torches', wrong:'torchs'   },
+  { singular:'girl',   emoji:'👧', correct:'girls',   wrong:'girles'   },
+];
+
+function buildPluralChoice() {
+  const emojis = sampleUnique(PLURALCHOICE_EMOJI_POOL, 7).map(w => ({ type:'pluralchoice', singular:w.singular, emoji:w.emoji, correct:w.correct, wrong:w.wrong }));
+  return [...PLURALCHOICE_IMG_FIXED, ...emojis].sort(() => Math.random() - 0.5);
+}
+
+// ---- Level 3 Ex4 — How Many?: fixed image anchors + emoji pool ----
+const COUNTCHOICE_IMG_FIXED = [
+  { type:'countchoice', img:'assets/exercise3/apple.png', singular:'apple',     plural:'apples'     },
+  { type:'countchoice', img:'assets/teacher.png',         singular:'teacher',   plural:'teachers'   },
+  { type:'countchoice', img:'assets/classroom.png',       singular:'classroom', plural:'classrooms' },
+];
+const COUNTCHOICE_EMOJI_POOL = [
+  { emoji:'🚌', singular:'bus',     plural:'buses'    },
+  { emoji:'🦊', singular:'fox',     plural:'foxes'    },
+  { emoji:'🌸', singular:'flower',  plural:'flowers'  },
+  { emoji:'📦', singular:'box',     plural:'boxes'    },
+  { emoji:'🐒', singular:'monkey',  plural:'monkeys'  },
+  { emoji:'🍽️', singular:'dish',    plural:'dishes'   },
+  { emoji:'⌚', singular:'watch',   plural:'watches'  },
+  { emoji:'🔦', singular:'torch',   plural:'torches'  },
+  { emoji:'🥛', singular:'glass',   plural:'glasses'  },
+  { emoji:'👦', singular:'boy',     plural:'boys'     },
+  { emoji:'👧', singular:'girl',    plural:'girls'    },
+  { emoji:'🎈', singular:'balloon', plural:'balloons' },
+];
+
+function randomCount() {
+  return 1 + Math.floor(Math.random() * 6); // 1–6, keeps counting pictures kid-friendly
+}
+
+function buildCountChoice() {
+  const fixed = COUNTCHOICE_IMG_FIXED.map(item => ({ ...item, count: randomCount() }));
+  const emojis = sampleUnique(COUNTCHOICE_EMOJI_POOL, 9).map(w => ({ type:'countchoice', emoji:w.emoji, singular:w.singular, plural:w.plural, count: randomCount() }));
+  return [...fixed, ...emojis].sort(() => Math.random() - 0.5);
+}
+
+function buildLevel2Data() {
+  return [
+    level2Data[0], // Lesson — static teaching content, not a quiz
+    buildPluralS(),
+    buildPluralEs(),
+    ...buildPluralChoice(),
+    ...buildCountChoice(),
+  ];
+}
+
 const LEVELS = [
-  { title:"Nouns", sub:"Sort and find the nouns!", data:level0Data, prompt:"Let's learn about nouns!",
+  { title:"Nouns", sub:"Sort and find the nouns!", data:level0Data, dataBuilder:buildLevel0Data, prompt:"Let's learn about nouns!",
     exercises:[
       { label:'Exercise 1 — Sort It!',      sub:'Drag each word into the right group',              startIdx:0 },
       { label:'Exercise 2 — Find the Noun', sub:'Tap the noun in each sentence',                    startIdx:1 },
@@ -907,14 +1153,14 @@ const LEVELS = [
       { label:'Exercise 4 — Fill the Blank',sub:'Type the correct noun to complete each sentence',  startIdx:3 },
     ]
   },
-  { title:"Common Noun vs Proper Noun", sub:"Tap each word: is it a common noun or a proper noun?", data:level1Data, prompt:"Is this a common noun or a proper noun?",
+  { title:"Common Noun vs Proper Noun", sub:"Tap each word: is it a common noun or a proper noun?", data:level1Data, dataBuilder:buildLevel1Data, prompt:"Is this a common noun or a proper noun?",
     exercises:[
       { label:'Exercise 1 — Common or Proper?',  sub:'Is each word a common noun or a proper noun?',  startIdx:0  },
       { label:'Exercise 2 — Colour the Nouns',   sub:'Choose a colour and highlight the proper nouns', startIdx:10 },
       { label:'Exercise 3 — Paint the Candies',  sub:'Pick a colour and paint each candy correctly',   startIdx:11 },
     ]
   },
-  { title:"Singular & Plural Nouns", sub:"Learn when to add -s or -es!", data:level2Data, prompt:"Let's learn about singular and plural nouns!",
+  { title:"Singular & Plural Nouns", sub:"Learn when to add -s or -es!", data:level2Data, dataBuilder:buildLevel2Data, prompt:"Let's learn about singular and plural nouns!",
     exercises:[
       { label:'Lesson — Singular & Plural',  sub:'Learn the rules for making plurals',  startIdx:0 },
       { label:'Exercise 1 — Add -s',         sub:'Type the plural by adding -s',              startIdx:1 },
@@ -1023,6 +1269,7 @@ function startLevel(levelIndex, startIdx = 0) {
   wrongCount = 0;
   currentLevel = levelIndex;
   currentIdx = startIdx;
+  if (LEVELS[levelIndex].dataBuilder) LEVELS[levelIndex].data = LEVELS[levelIndex].dataBuilder();
   document.getElementById('view-map').classList.remove('active');
   document.getElementById('view-chapterend').classList.remove('active');
   document.getElementById('view-level').classList.add('active');
@@ -2445,6 +2692,15 @@ function renderJumble(q, c) {
       prog.appendChild(dot);
     }
     c.appendChild(prog);
+
+    if (speakWordSupported()) {
+      const playWrap = document.createElement('div');
+      playWrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:16px;';
+      playWrap.innerHTML = `<div class="jumble-play-btn" id="jumblePlayBtn">🔊</div><div class="phonetic-hint">Tap to hear the word</div>`;
+      c.appendChild(playWrap);
+      document.getElementById('jumblePlayBtn').onclick = () => speakWord(item.word);
+      speakWord(item.word);
+    }
 
     const target = item.word.toUpperCase();
     const letters = item.scrambled.split('');
